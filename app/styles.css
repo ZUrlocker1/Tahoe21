@@ -214,8 +214,8 @@ body {
 
 .player-hand.single-hand {
   grid-template-columns: 1fr;
-  border: 0;
-  padding: 0;
+  border: 1px solid transparent;
+  padding: 0.18rem;
   background: transparent;
 }
 
@@ -225,9 +225,7 @@ body {
 }
 
 .player-hand.single-hand.is-active {
-  border: 1px solid rgba(239, 189, 74, 0.45);
-  border-radius: 8px;
-  padding: 0.18rem;
+  border-color: rgba(239, 189, 74, 0.45);
 }
 
 .player-hand-label {
@@ -241,6 +239,7 @@ body {
   font-size: 0.74rem;
   color: #cee2d7;
   letter-spacing: 0.03em;
+  white-space: pre-line;
 }
 
 .card-slot {

@@ -6,6 +6,7 @@ const BET_STEP = 10;
 const START_BALANCE = 90;
 const TABLE_MAX = 500;
 const SHOE_DECKS = 6;
+const DEALER_REVEAL_STEP_MS = 500;
 const KEY_HINT_TEXT = "Hit = Space, Stand = Enter, D = Double, T = Split, Esc = Reset.";
 
 const PAYTABLE = [
@@ -720,7 +721,7 @@ function startRound() {
     { side: "dealer", index: 0 },
     { side: "player", index: 1 },
   ];
-  const stepMs = 180;
+  const stepMs = 300;
 
   for (let i = 0; i < steps.length; i += 1) {
     const timer = setTimeout(() => {
@@ -866,26 +867,50 @@ function split() {
 
 function resolveDealerAndRound() {
   state.phase = "DEALER_TURN";
-  if (state.dealerHoleHidden) cardFlipSound();
-  state.dealerHoleHidden = false;
+  clearDealTimers();
+  setResult("Dealer turn...", "Revealing cards.");
+  renderAll();
 
-  let dealerEval = handValue(state.dealerHand);
-  while (dealerEval.best < 17) {
-    state.dealerHand.push(drawCard());
-    cardFlipSound();
-    dealerEval = handValue(state.dealerHand);
-  }
+  const continueDealerReveal = () => {
+    const dealerEval = handValue(state.dealerHand);
+    const forceBustDraw =
+      state.testMode &&
+      ["Split Aces", "Player Blackjack", "Split Eights", "Low Cards", "Double Win"].includes(state.testScenarioLabel) &&
+      !dealerEval.isBust &&
+      (dealerEval.best === 17 || dealerEval.best === 18);
 
-  if (
-    state.testMode &&
-    ["Split Aces", "Player Blackjack", "Split Eights", "Low Cards", "Double Win"].includes(state.testScenarioLabel) &&
-    !dealerEval.isBust &&
-    (dealerEval.best === 17 || dealerEval.best === 18)
-  ) {
-    state.dealerHand.push({ rank: 13, suit: "S" });
-    cardFlipSound();
-    dealerEval = handValue(state.dealerHand);
+    if (dealerEval.best < 17 || forceBustDraw) {
+      const drawTimer = setTimeout(() => {
+        if (forceBustDraw && dealerEval.best >= 17) {
+          state.dealerHand.push({ rank: 13, suit: "S" });
+        } else {
+          state.dealerHand.push(drawCard());
+        }
+        cardFlipSound();
+        renderAll();
+        continueDealerReveal();
+      }, DEALER_REVEAL_STEP_MS);
+      dealTimers.push(drawTimer);
+      return;
+    }
+
+    finalizeDealerRound(dealerEval);
+  };
+
+  if (state.dealerHoleHidden) {
+    const revealTimer = setTimeout(() => {
+      state.dealerHoleHidden = false;
+      cardFlipSound();
+      renderAll();
+      continueDealerReveal();
+    }, DEALER_REVEAL_STEP_MS);
+    dealTimers.push(revealTimer);
+  } else {
+    continueDealerReveal();
   }
+}
+
+function finalizeDealerRound(dealerEval) {
 
   let net = 0;
   let wins = 0;
@@ -1106,7 +1131,7 @@ function renderDealer() {
     if (state.phase === "DEALING") {
       hidden = !state.dealRevealDealer[i];
     } else {
-      hidden = state.dealerHoleHidden && i === 1 && state.phase !== "ROUND_RESULT" && state.phase !== "DEALER_TURN";
+      hidden = state.dealerHoleHidden && i === 1 && state.phase !== "ROUND_RESULT";
     }
     const slot = renderCardSlot(state.dealerHand[i], hidden);
     slot.style.zIndex = String(i + 1);
@@ -1133,11 +1158,11 @@ function renderDealer() {
   }
 }
 
-function handHeaderLabel(hand, index) {
+function handHeaderLabel(hand) {
   const evalHand = handValue(hand.cards);
-  const parts = [`Hand ${evalHand.best}`, `Bet ${formatCash(hand.bet)}`];
-  if (hand.result) parts.push(hand.result);
-  return parts.join(" | ");
+  const lines = [`Hand: ${evalHand.best}`, `Bet: ${formatCash(hand.bet)}`];
+  if (hand.result) lines.push(hand.result);
+  return lines.join("\n");
 }
 
 function renderPlayerHands() {
@@ -1191,7 +1216,7 @@ function renderPlayerHands() {
     if (state.playerHands.length > 1) {
       const label = document.createElement("div");
       label.className = "player-hand-label";
-      label.textContent = handHeaderLabel(hand, i);
+      label.textContent = handHeaderLabel(hand);
       handWrap.appendChild(label);
     }
     handWrap.appendChild(cards);
