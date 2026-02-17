@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = "0.4";
+const APP_VERSION = "0.6";
 const MIN_BET = 10;
 const BET_STEP = 10;
 const START_BALANCE = 90;
@@ -1140,15 +1140,11 @@ function renderPlayerHands() {
 
   if (!state.playerHands.length && state.phase === "PRE_DEAL") {
     const handWrap = document.createElement("div");
-    handWrap.className = "player-hand";
-    const label = document.createElement("div");
-    label.className = "player-hand-label";
-    label.textContent = `Hand 1 | Total - | Bet ${formatCash(state.bet)}`;
+    handWrap.className = "player-hand single-hand";
     const cards = document.createElement("div");
     cards.className = "hand-cards";
     cards.appendChild(renderCardSlot(null, true));
     cards.appendChild(renderCardSlot(null, true));
-    handWrap.appendChild(label);
     handWrap.appendChild(cards);
     el.playerHands.appendChild(handWrap);
     el.playerTotal.textContent = "Total: -";
@@ -1168,13 +1164,10 @@ function renderPlayerHands() {
     const hand = state.playerHands[i];
     const handWrap = document.createElement("div");
     handWrap.className = "player-hand";
+    if (state.playerHands.length === 1) handWrap.classList.add("single-hand");
     if (state.phase === "PLAYER_TURN" && i === state.activeHandIndex && !hand.done) {
       handWrap.classList.add("is-active");
     }
-
-    const label = document.createElement("div");
-    label.className = "player-hand-label";
-    label.textContent = handHeaderLabel(hand, i);
 
     const cards = document.createElement("div");
     cards.className = "hand-cards";
@@ -1186,7 +1179,12 @@ function renderPlayerHands() {
       cards.appendChild(slot);
     }
 
-    handWrap.appendChild(label);
+    if (state.playerHands.length > 1) {
+      const label = document.createElement("div");
+      label.className = "player-hand-label";
+      label.textContent = handHeaderLabel(hand, i);
+      handWrap.appendChild(label);
+    }
     handWrap.appendChild(cards);
     el.playerHands.appendChild(handWrap);
   }
