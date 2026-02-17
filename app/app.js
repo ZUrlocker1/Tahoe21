@@ -624,32 +624,54 @@ function settleInitialBlackjack() {
   const hand = state.playerHands[0];
   const playerEval = handValue(hand.cards);
   const dealerEval = handValue(state.dealerHand);
-  state.dealerHoleHidden = false;
+  clearDealTimers();
+  state.phase = "DEALER_TURN";
+  setResult("Dealer check...", "Revealing cards.");
+  renderAll();
 
-  if (playerEval.isBlackjack && dealerEval.isBlackjack) {
-    state.balance += hand.bet;
-    pushSound();
-    setResult("Push. Both have blackjack.", `Net ${formatSigned(0)}. Press Next Hand.`, "is-neutral");
-  } else if (playerEval.isBlackjack) {
-    const payout = Math.round(hand.bet * 2.5);
-    const profit = payout - hand.bet;
-    state.balance += payout;
-    bigWinningSound();
-    setResult(
-      `Blackjack! You win ${formatCash(profit)}.`,
-      `Paid 3:2. Net ${formatSigned(profit)}. Press Next Hand.`,
-      "is-win"
-    );
+  const resolveOutcome = () => {
+    if (playerEval.isBlackjack && dealerEval.isBlackjack) {
+      state.balance += hand.bet;
+      pushSound();
+      setResult("Push. Both have blackjack.", `Net ${formatSigned(0)}. Press Next Hand.`, "is-neutral");
+    } else if (playerEval.isBlackjack) {
+      const payout = Math.round(hand.bet * 2.5);
+      const profit = payout - hand.bet;
+      state.balance += payout;
+      bigWinningSound();
+      setResult(
+        `Blackjack! You win ${formatCash(profit)}.`,
+        `Paid 3:2. Net ${formatSigned(profit)}. Press Next Hand.`,
+        "is-win"
+      );
+    } else {
+      losingHandSound();
+      setResult(
+        "Dealer blackjack.",
+        `You lose ${formatCash(hand.bet)}. Net ${formatSigned(-hand.bet)}. Press Next Hand.`,
+        "is-loss"
+      );
+    }
+
+    state.phase = "ROUND_RESULT";
+    renderAll();
+  };
+
+  if (state.dealerHoleHidden) {
+    const revealTimer = setTimeout(() => {
+      state.dealerHoleHidden = false;
+      cardFlipSound();
+      renderAll();
+      const postRevealTimer = setTimeout(resolveOutcome, DEALER_REVEAL_STEP_MS);
+      dealTimers.push(postRevealTimer);
+    }, DEALER_REVEAL_STEP_MS);
+    dealTimers.push(revealTimer);
   } else {
-    losingHandSound();
-    setResult(
-      "Dealer blackjack.",
-      `You lose ${formatCash(hand.bet)}. Net ${formatSigned(-hand.bet)}. Press Next Hand.`,
-      "is-loss"
-    );
+    state.dealerHoleHidden = false;
+    renderAll();
+    const postRevealTimer = setTimeout(resolveOutcome, DEALER_REVEAL_STEP_MS);
+    dealTimers.push(postRevealTimer);
   }
-
-  state.phase = "ROUND_RESULT";
 }
 
 function completeInitialDeal() {
@@ -1160,8 +1182,8 @@ function renderDealer() {
 
 function handHeaderLabel(hand) {
   const evalHand = handValue(hand.cards);
-  const lines = [`Hand: ${evalHand.best}`, `Bet: ${formatCash(hand.bet)}`];
-  if (hand.result) lines.push(hand.result);
+  const betLine = hand.result ? `Bet: ${formatCash(hand.bet)}  ${hand.result}` : `Bet: ${formatCash(hand.bet)}`;
+  const lines = [`Hand: ${evalHand.best}`, betLine];
   return lines.join("\n");
 }
 
