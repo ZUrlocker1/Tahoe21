@@ -1,18 +1,20 @@
 "use strict";
 
-const APP_VERSION = "1.5";
-const KEY_HINT_TEXT = "Keys: 1-5 hold, arrows bet, Enter/Space deal/draw, S sound, H help, Esc reset.";
+const APP_VERSION = "0.4";
+const MIN_BET = 10;
+const BET_STEP = 10;
+const START_BALANCE = 90;
+const TABLE_MAX = 500;
+const SHOE_DECKS = 6;
+const KEY_HINT_TEXT = "Hit = Space, Stand = Enter, D = Double, T = Split, Esc = Reset.";
 
 const PAYTABLE = [
-  { name: "Royal Flush", base: 2500, key: "royalFlush" },
-  { name: "Straight Flush", base: 500, key: "straightFlush" },
-  { name: "Four of a Kind", base: 250, key: "fourKind" },
-  { name: "Full House", base: 80, key: "fullHouse" },
-  { name: "Flush", base: 50, key: "flush" },
-  { name: "Straight", base: 40, key: "straight" },
-  { name: "Three of a Kind", base: 30, key: "threeKind" },
-  { name: "Two Pair", base: 20, key: "twoPair" },
-  { name: "Jacks or Better", base: 10, key: "jacksOrBetter" },
+  { name: "Blackjack", value: "3:2" },
+  { name: "Regular Win", value: "1:1" },
+  { name: "Push", value: "Bet back" },
+  { name: "Dealer", value: "Stands soft 17" },
+  { name: "Split", value: "One split max" },
+  { name: "Double", value: "Two cards only" },
 ];
 
 const SUITS = ["C", "D", "H", "S"];
@@ -40,31 +42,124 @@ const COURT_IMAGE = {
 };
 
 const TAUNTS = [
-  "You must be new to this game!",
-  "Maybe you are lucky in other ways!",
-  "Have you thought about other hobbies?",
-  "Therapy might be cheaper!",
-  "Better luck next time.",
-  "Deposit car keys now.",
+  "House credit approved. Try not to need another one.",
+  "Emergency bankroll unlocked. Use it wisely.",
+  "The pit boss is side-eyeing this run.",
+  "Loan issued. Maybe stand more, hit less.",
+  "Credit line reopened. No judgment. Some judgment.",
+];
+
+const TEST_SCENARIOS = [
+  {
+    name: "Split Aces",
+    deck: ["AH", "9C", "AD", "7D", "9S", "8H", "KH"],
+    note: "Split aces scenario where dealer should bust.",
+  },
+  {
+    name: "Player Blackjack",
+    deck: ["AS", "9C", "KH", "7D", "5S", "6H"],
+    note: "Natural blackjack should pay 3:2.",
+  },
+  {
+    name: "Split Eights",
+    deck: ["8H", "9C", "8D", "7S", "TH", "9D", "KC"],
+    note: "Split eights scenario where dealer should bust.",
+  },
+  {
+    name: "Low Cards",
+    deck: [
+      "2H",
+      "TC",
+      "2D",
+      "9S",
+      "2C",
+      "2S",
+      "3C",
+      "3D",
+      "3H",
+      "3S",
+      "4C",
+      "4D",
+      "4H",
+      "4S",
+      "5C",
+      "5D",
+      "5H",
+      "5S",
+      "6C",
+      "6D",
+      "6H",
+      "6S",
+      "7C",
+      "7D",
+      "7H",
+      "7S",
+    ],
+    note: "Low cards to test card fanning layout.",
+  },
+  {
+    name: "Double Win",
+    deck: ["5H", "TC", "6D", "6S", "TD", "8C"],
+    note: "Double on 11 for a likely winning hand.",
+  },
+  {
+    name: "Player Twenty Win",
+    deck: ["TH", "6C", "QH", "9D", "8S", "2C"],
+    note: "High total non-blackjack win path.",
+  },
+  {
+    name: "Player Bust",
+    deck: ["TH", "9C", "7S", "6D", "9H"],
+    note: "Hit once on 17 to force bust path.",
+  },
+  {
+    name: "Push",
+    deck: ["TS", "9C", "7H", "8D", "2C", "3D"],
+    note: "Stand on 17 for push vs dealer 17.",
+  },
+  {
+    name: "Dealer Blackjack",
+    deck: ["TH", "AC", "9S", "KD", "5C"],
+    note: "Dealer natural should beat non-natural 21.",
+  },
+  {
+    name: "Double Loss",
+    deck: ["9H", "TS", "2D", "7C", "2S"],
+    note: "Double path with losing result.",
+  },
 ];
 
 const state = {
   phase: "PRE_DEAL",
   soundOn: true,
-  balance: 90,
-  bet: 10,
-  deck: [],
-  top: 0,
-  hand: [],
-  hold: [false, false, false, false, false],
-  drawStage: ["none", "none", "none", "none", "none"],
-  highlightedPayKey: null,
-  secretRedrawMode: false,
+  balance: START_BALANCE,
+  bet: MIN_BET,
+  shoe: [],
+  shoePos: 0,
+  cutCard: 0,
+  dealerHand: [],
+  dealerHoleHidden: true,
+  playerHands: [],
+  activeHandIndex: 0,
+  testMode: false,
+  testScenarioIndex: 0,
+  testScenarioLabel: "",
+  testScenarioNote: "",
+  testRoundDeck: null,
+  testRoundPos: 0,
+  resultTone: "",
+  resultMain: "Press Deal to start.",
+  resultSub: KEY_HINT_TEXT,
+  dealRevealPlayer: [false, false],
+  dealRevealDealer: [false, false],
 };
 
 const el = {
   brandLogo: document.querySelector(".brand-logo"),
-  cards: document.getElementById("cards"),
+  dealerHand: document.getElementById("dealerHand"),
+  dealerTotal: document.getElementById("dealerTotal"),
+  playerHands: document.getElementById("playerHands"),
+  playerTotal: document.getElementById("playerTotal"),
   paytableList: document.getElementById("paytableList"),
   betValue: document.getElementById("betValue"),
   balanceValue: document.getElementById("balanceValue"),
@@ -73,6 +168,10 @@ const el = {
   dealDrawBtn: document.getElementById("dealDrawBtn"),
   betUpBtn: document.getElementById("betUpBtn"),
   betDownBtn: document.getElementById("betDownBtn"),
+  hitBtn: document.getElementById("hitBtn"),
+  standBtn: document.getElementById("standBtn"),
+  doubleBtn: document.getElementById("doubleBtn"),
+  splitBtn: document.getElementById("splitBtn"),
   aboutBtn: document.getElementById("aboutBtn"),
   helpBtn: document.getElementById("helpBtn"),
   soundBtn: document.getElementById("soundBtn"),
@@ -83,6 +182,11 @@ const el = {
 
 let audioContext;
 let dealTimers = [];
+
+function clearDealTimers() {
+  for (const t of dealTimers) clearTimeout(t);
+  dealTimers = [];
+}
 
 function ensureAudioContext() {
   if (!audioContext) {
@@ -102,9 +206,7 @@ function playTone(freq, duration, type = "triangle", volume = 0.05) {
   osc.connect(gain);
   gain.connect(ctx.destination);
   osc.start();
-  setTimeout(() => {
-    osc.stop();
-  }, duration);
+  setTimeout(() => osc.stop(), duration);
 }
 
 function playSlide(startFreq, endFreq, duration, type = "sawtooth", volume = 0.055) {
@@ -123,71 +225,32 @@ function playSlide(startFreq, endFreq, duration, type = "sawtooth", volume = 0.0
   osc.stop(now + duration / 1000);
 }
 
-function playSequence(sequence) {
+function playSequence(sequence, gap = 25) {
   if (!state.soundOn) return;
   let delay = 0;
   for (const note of sequence) {
-    setTimeout(() => playTone(note.f, note.d), delay);
-    delay += note.d + 25;
+    setTimeout(() => playTone(note.f, note.d, note.t || "triangle", note.v || 0.05), delay);
+    delay += note.d + gap;
   }
 }
 
-function startingSound() {
-  playSequence([{ f: 262, d: 90 }, { f: 330, d: 90 }, { f: 392, d: 100 }, { f: 523, d: 130 }]);
+function randomItem(items) {
+  return items[Math.floor(Math.random() * items.length)];
 }
 
-function losingHandSound() {
+function playChord(freqs, duration = 120, type = "triangle", volume = 0.024) {
   if (!state.soundOn) return;
+  for (const f of freqs) {
+    playTone(f, duration, type, volume);
+  }
+}
+
+function startupSound() {
   playSequence([
-    { f: 330, d: 130 },
-    { f: 277, d: 130 },
-    { f: 196, d: 220 },
-  ]);
-}
-
-function winningSound() {
-  playSequence([{ f: 523, d: 90 }, { f: 659, d: 90 }, { f: 784, d: 180 }, { f: 1047, d: 260 }]);
-}
-
-function goodWinningSound() {
-  playSequence([
-    { f: 494, d: 80 },
-    { f: 587, d: 90 },
-    { f: 740, d: 120 },
-    { f: 880, d: 150 },
-  ]);
-}
-
-function greatWinningSound() {
-  playSequence([{ f: 659, d: 80 }, { f: 784, d: 80 }, { f: 1047, d: 110 }, { f: 1318, d: 140 }, { f: 1568, d: 190 }]);
-}
-
-function emergencyLoanSound() {
-  if (!state.soundOn) return;
-  playSlide(420, 320, 180);
-  setTimeout(() => playSlide(360, 250, 200), 140);
-  setTimeout(() => playSlide(300, 180, 240), 310);
-}
-
-function invalidBeep() {
-  playTone(131, 55, "square", 0.045);
-}
-
-function hiBeep() {
-  playTone(262, 22, "triangle", 0.04);
-}
-
-function secretModeBeep() {
-  playSequence([
-    { f: 294, d: 28 },
-    { f: 349, d: 34 },
-  ]);
-}
-
-function holdChime() {
-  playSequence([
-    { f: 740, d: 35 },
-    { f: 988, d: 45 },
+    { f: 262, d: 90 },
+    { f: 330, d: 90 },
+    { f: 392, d: 100 },
+    { f: 523, d: 130 },
   ]);
 }
 
@@ -197,64 +260,130 @@ function cardFlipSound() {
   setTimeout(() => playTone(640, 22, "sine", 0.014), 32);
 }
 
-function clearDealTimers() {
-  for (const id of dealTimers) clearTimeout(id);
-  dealTimers = [];
+function hiBeep() {
+  playTone(262, 22, "triangle", 0.04);
 }
 
-function countUnheldCards() {
-  let count = 0;
-  for (let i = 0; i < 5; i += 1) {
-    if (!state.hold[i]) count += 1;
-  }
-  return count;
+function invalidBeep() {
+  playTone(131, 55, "square", 0.045);
 }
 
-function isPortraitMobile() {
-  return window.matchMedia("(max-width: 900px) and (orientation: portrait)").matches;
+function lowBeep() {
+  playTone(175, 70, "square", 0.04);
 }
 
-function ensureDrawCapacity() {
-  const needed = countUnheldCards();
-  if (state.top + needed <= state.deck.length) return;
-  state.deck = freshDeck();
-  shuffleDeck(state.deck);
-  state.top = 0;
+function emergencyLoanSound() {
+  if (!state.soundOn) return;
+  playSlide(420, 320, 180);
+  setTimeout(() => playSlide(360, 250, 200), 140);
+  setTimeout(() => playSlide(300, 180, 240), 310);
 }
 
-function enterSecretRedrawMode() {
-  secretModeBeep();
-  state.secretRedrawMode = true;
-  state.phase = "HOLD_SELECT";
-  setResult("Secret test mode enabled.", "Press 1-5/tap to hold, Enter/space to draw again, Z to exit.");
-  renderAll();
+function pushSound() {
+  const patterns = [
+    [{ f: 392, d: 65, t: "sine", v: 0.032 }, { f: 392, d: 65, t: "sine", v: 0.032 }],
+    [{ f: 440, d: 55, t: "sine", v: 0.03 }, { f: 392, d: 70, t: "sine", v: 0.03 }],
+    [{ f: 349, d: 58, t: "triangle", v: 0.03 }, { f: 392, d: 58, t: "triangle", v: 0.03 }],
+  ];
+  playSequence(randomItem(patterns), 20);
 }
 
-function exitSecretRedrawMode() {
-  secretModeBeep();
-  state.secretRedrawMode = false;
-  state.phase = "RESULT";
-  setResult("Secret test mode disabled.", "Press Enter/space for next hand, or Z to re-enable.");
-  renderAll();
+function winningSound() {
+  const variants = [
+    [{ f: 523, d: 75 }, { f: 659, d: 75 }, { f: 784, d: 110 }, { f: 988, d: 140 }],
+    [{ f: 494, d: 70 }, { f: 587, d: 75 }, { f: 740, d: 95 }, { f: 880, d: 145 }],
+    [{ f: 523, d: 65 }, { f: 659, d: 70 }, { f: 523, d: 65 }, { f: 784, d: 150 }],
+    [{ f: 587, d: 68 }, { f: 698, d: 72 }, { f: 880, d: 110 }, { f: 1047, d: 130 }],
+  ];
+  const selected = randomItem(variants);
+  playSequence(selected, 18);
+  setTimeout(() => playChord([selected[2].f, selected[3].f], 100, "sine", 0.017), 110);
 }
 
-function toggleSecretTestModeShortcut() {
-  if (state.phase !== "RESULT") return;
-  if (state.secretRedrawMode) {
-    exitSecretRedrawMode();
-  } else {
-    enterSecretRedrawMode();
-  }
+function bigWinningSound() {
+  const fanfares = [
+    [
+      { f: 523, d: 70, t: "triangle", v: 0.06 },
+      { f: 659, d: 80, t: "triangle", v: 0.06 },
+      { f: 784, d: 95, t: "triangle", v: 0.062 },
+      { f: 988, d: 110, t: "triangle", v: 0.065 },
+      { f: 1175, d: 140, t: "triangle", v: 0.07 },
+      { f: 1318, d: 180, t: "triangle", v: 0.072 },
+      { f: 1568, d: 280, t: "triangle", v: 0.076 },
+    ],
+    [
+      { f: 494, d: 65, t: "square", v: 0.05 },
+      { f: 587, d: 72, t: "triangle", v: 0.058 },
+      { f: 740, d: 88, t: "triangle", v: 0.06 },
+      { f: 988, d: 105, t: "triangle", v: 0.064 },
+      { f: 1245, d: 140, t: "triangle", v: 0.07 },
+      { f: 1480, d: 170, t: "triangle", v: 0.073 },
+      { f: 1760, d: 300, t: "triangle", v: 0.078 },
+    ],
+    [
+      { f: 523, d: 55, t: "triangle", v: 0.058 },
+      { f: 659, d: 65, t: "triangle", v: 0.058 },
+      { f: 784, d: 75, t: "triangle", v: 0.06 },
+      { f: 659, d: 70, t: "triangle", v: 0.06 },
+      { f: 988, d: 115, t: "triangle", v: 0.065 },
+      { f: 1318, d: 165, t: "triangle", v: 0.072 },
+      { f: 1568, d: 320, t: "triangle", v: 0.08 },
+    ],
+  ];
+  const chosen = randomItem(fanfares);
+  playSequence(chosen, 20);
+  setTimeout(() => playChord([784, 988, 1318], 140, "sine", 0.017), 170);
+  setTimeout(() => playSlide(900, 1300, 150, "triangle", 0.02), 360);
 }
 
-function freshDeck() {
-  const deck = [];
-  for (const suit of SUITS) {
-    for (let rank = 1; rank <= 13; rank += 1) {
-      deck.push({ rank, suit });
+function losingHandSound() {
+  const variants = [
+    [
+      { f: 392, d: 105, t: "sawtooth", v: 0.04 },
+      { f: 330, d: 110, t: "sawtooth", v: 0.04 },
+      { f: 247, d: 140, t: "square", v: 0.045 },
+      { f: 185, d: 220, t: "square", v: 0.05 },
+    ],
+    [
+      { f: 349, d: 95, t: "square", v: 0.04 },
+      { f: 294, d: 110, t: "square", v: 0.044 },
+      { f: 233, d: 120, t: "sawtooth", v: 0.047 },
+      { f: 175, d: 240, t: "sawtooth", v: 0.05 },
+    ],
+    [
+      { f: 392, d: 70, t: "triangle", v: 0.034 },
+      { f: 311, d: 85, t: "square", v: 0.043 },
+      { f: 262, d: 110, t: "square", v: 0.046 },
+      { f: 196, d: 210, t: "sawtooth", v: 0.05 },
+    ],
+  ];
+  playSequence(randomItem(variants), 17);
+  setTimeout(() => playSlide(230, 160, 180, "square", 0.028), 210);
+}
+
+function formatCash(v) {
+  return `$${v}`;
+}
+
+function formatSigned(v) {
+  if (v > 0) return `+$${v}`;
+  if (v < 0) return `-$${Math.abs(v)}`;
+  return "$0";
+}
+
+function buildFreshShoe() {
+  const shoe = [];
+  for (let deckNum = 0; deckNum < SHOE_DECKS; deckNum += 1) {
+    for (const suit of SUITS) {
+      for (let rank = 1; rank <= 13; rank += 1) {
+        shoe.push({ rank, suit });
+      }
     }
   }
-  return deck;
+  shuffleDeck(shoe);
+  state.shoe = shoe;
+  state.shoePos = 0;
+  state.cutCard = Math.floor(shoe.length * 0.75);
 }
 
 function shuffleDeck(deck) {
@@ -264,69 +393,71 @@ function shuffleDeck(deck) {
   }
 }
 
-function rankCounts(hand) {
-  const counts = Array(14).fill(0);
-  for (const card of hand) counts[card.rank] += 1;
-  return counts;
+function parseCard(code) {
+  const suit = code.slice(-1).toUpperCase();
+  const rankCode = code.slice(0, -1).toUpperCase();
+  const rankMap = { A: 1, J: 11, Q: 12, K: 13, T: 10 };
+  const rank = rankMap[rankCode] || Number(rankCode);
+  return { rank, suit };
 }
 
-function isStraightFromCounts(counts) {
-  for (let start = 1; start <= 9; start += 1) {
-    let ok = true;
-    for (let r = start; r < start + 5; r += 1) {
-      if (counts[r] !== 1) {
-        ok = false;
-        break;
-      }
+function isCompactLayout() {
+  return window.matchMedia("(max-width: 900px), (orientation: portrait)").matches;
+}
+
+function queueScenarioDeck() {
+  const scenario = TEST_SCENARIOS[state.testScenarioIndex % TEST_SCENARIOS.length];
+  state.testScenarioIndex += 1;
+  state.testScenarioLabel = scenario.name;
+  state.testScenarioNote = scenario.note;
+  state.testRoundDeck = scenario.deck.map(parseCard);
+  state.testRoundPos = 0;
+}
+
+function drawCard() {
+  if (state.testRoundDeck && state.testRoundPos < state.testRoundDeck.length) {
+    const card = state.testRoundDeck[state.testRoundPos];
+    state.testRoundPos += 1;
+    return card;
+  }
+  if (!state.shoe.length || state.shoePos >= state.shoe.length) {
+    buildFreshShoe();
+  }
+  const card = state.shoe[state.shoePos];
+  state.shoePos += 1;
+  return card;
+}
+
+function needsReshuffleSoon() {
+  return state.shoePos >= state.cutCard;
+}
+
+function handValue(cards) {
+  let hard = 0;
+  let aces = 0;
+  for (const card of cards) {
+    if (card.rank === 1) {
+      aces += 1;
+      hard += 1;
+    } else if (card.rank >= 10) {
+      hard += 10;
+    } else {
+      hard += card.rank;
     }
-    if (ok) return true;
   }
-  const aceLow = counts[1] === 1 && counts[2] === 1 && counts[3] === 1 && counts[4] === 1 && counts[5] === 1;
-  const aceHigh = counts[1] === 1 && counts[10] === 1 && counts[11] === 1 && counts[12] === 1 && counts[13] === 1;
-  return aceLow || aceHigh;
+  let best = hard;
+  while (aces > 0 && best + 10 <= 21) {
+    best += 10;
+    aces -= 1;
+  }
+  const isSoft = best !== hard;
+  const isBust = best > 21;
+  const isBlackjack = cards.length === 2 && best === 21;
+  return { hard, best, isSoft, isBust, isBlackjack };
 }
 
-function evaluateHand(hand) {
-  const counts = rankCounts(hand);
-  const pairs = [];
-  let three = false;
-  let four = false;
-  for (let r = 1; r <= 13; r += 1) {
-    if (counts[r] === 2) pairs.push(r);
-    if (counts[r] === 3) three = true;
-    if (counts[r] === 4) four = true;
-  }
-  const flush = hand.every((c) => c.suit === hand[0].suit);
-  const straight = isStraightFromCounts(counts);
-  const royal = counts[1] && counts[10] && counts[11] && counts[12] && counts[13];
-
-  if (straight && flush && royal) return { key: "royalFlush", text: "Royal Flush!", base: 2500 };
-  if (straight && flush) return { key: "straightFlush", text: "Straight Flush!", base: 500 };
-  if (four) return { key: "fourKind", text: "Four of a Kind!", base: 250 };
-  if (three && pairs.length === 1) return { key: "fullHouse", text: "Full House!", base: 80 };
-  if (flush) return { key: "flush", text: "Flush!", base: 50 };
-  if (straight) return { key: "straight", text: "Straight", base: 40 };
-  if (three) return { key: "threeKind", text: "Three of a Kind", base: 30 };
-  if (pairs.length === 2) return { key: "twoPair", text: "Two Pair", base: 20 };
-  if (pairs.length === 1 && [1, 11, 12, 13].includes(pairs[0])) {
-    return { key: "jacksOrBetter", text: "Jacks or Better", base: 10 };
-  }
-  if (pairs.length === 1) return { key: null, text: "Only a Pair", base: 0 };
-  return { key: null, text: "Nothing!", base: 0 };
-}
-
-function formatCash(v) {
-  return `$${v}`;
-}
-
-function renderPaytable() {
-  el.paytableList.innerHTML = "";
-  for (const row of PAYTABLE) {
-    const li = document.createElement("li");
-    if (state.highlightedPayKey === row.key) li.classList.add("win");
-    li.innerHTML = `<span>${row.name}</span><span>${row.base}</span>`;
-    el.paytableList.appendChild(li);
-  }
+function cardColorClass(card) {
+  return card && (card.suit === "D" || card.suit === "H") ? " red" : "";
 }
 
 function pipPattern(rank) {
@@ -361,11 +492,7 @@ function renderCourtBody(card) {
   const rank = RANK_TEXT[card.rank];
   const label = `${rank} of ${card.suit}`;
   const src = COURT_IMAGE[card.rank];
-  return `
-    <div class="court-wrap">
-      <img class="court-img" src="${src}" alt="${label}" />
-    </div>
-  `;
+  return `<div class="court-wrap"><img class="court-img" src="${src}" alt="${label}" /></div>`;
 }
 
 function renderAceBody(card) {
@@ -373,7 +500,6 @@ function renderAceBody(card) {
   return `
     <div class="ace-art">
       <img class="ace-logo ace-logo-center" src="${logoSrc}" alt="" aria-hidden="true" />
-      <div class="ace-ribbon"></div>
     </div>
   `;
 }
@@ -391,284 +517,450 @@ function renderCardInner(card) {
     ? `<div class="card-corner bottom"><span class="rank">${RANK_TEXT[card.rank]}</span><span class="suit">${SUIT_SYMBOL[card.suit]}</span></div>`
     : `<div class="card-corner bottom"><span class="rank">${RANK_TEXT[card.rank]}</span></div>`;
   const center = isAce ? renderAceBody(card) : card.rank >= 11 ? renderCourtBody(card) : renderPipBody(card);
-
-  return `
-    ${cornerTop}
-    <div class="card-body">${center}</div>
-    ${cornerBottom}
-  `;
+  return `${cornerTop}<div class="card-body">${center}</div>${cornerBottom}`;
 }
 
-function renderCards() {
-  el.cards.innerHTML = "";
-  for (let i = 0; i < 5; i += 1) {
-    const card = state.hand[i];
-    const column = document.createElement("div");
-    column.className = "card-column";
-    if (state.hold[i]) column.classList.add("is-held");
-    const topMeta = document.createElement("div");
-    topMeta.className = "card-meta";
-    const slotNumber = document.createElement("div");
-    slotNumber.className = "slot-number";
-    slotNumber.textContent = state.hold[i] ? "" : String(i + 1);
-    const holdStatus = document.createElement("div");
-    holdStatus.className = "hold-outside";
-    holdStatus.textContent = state.hold[i] ? "HOLD" : "";
-    const slot = document.createElement("button");
-    slot.type = "button";
-    slot.className = "card-slot";
-    if (card && ["D", "H"].includes(card.suit)) slot.classList.add("red");
-    if (state.phase === "DEALING" && card) slot.classList.add("is-dealing");
-    if (state.drawStage[i] === "back") slot.classList.add("is-draw-back");
-    if (state.drawStage[i] === "reveal") slot.classList.add("is-draw-reveal");
-    slot.setAttribute("aria-label", `Card ${i + 1}`);
-    slot.dataset.index = String(i + 1);
-    slot.innerHTML = state.drawStage[i] === "back" ? renderCardInner(null) : renderCardInner(card);
-    const canToggleHold = state.phase === "HOLD_SELECT" || (state.secretRedrawMode && state.phase === "RESULT");
-    slot.disabled = !canToggleHold;
-    slot.addEventListener("click", () => toggleHold(i));
-    topMeta.appendChild(slotNumber);
-    topMeta.appendChild(holdStatus);
-    column.appendChild(topMeta);
-    column.appendChild(slot);
-    el.cards.appendChild(column);
-  }
-}
-
-function renderStatus() {
-  const portraitMobile = isPortraitMobile();
-  el.betValue.textContent = formatCash(state.bet);
-  el.balanceValue.textContent = formatCash(state.balance);
-  el.aboutBtn.textContent = portraitMobile ? "About" : "About (A)";
-  el.helpBtn.textContent = portraitMobile ? "Help" : "Help (H)";
-  el.soundBtn.textContent = portraitMobile
-    ? `Sound: ${state.soundOn ? "On" : "Off"}`
-    : `Sound: ${state.soundOn ? "On" : "Off"} (S)`;
-  el.betUpBtn.disabled = state.phase !== "PRE_DEAL";
-  el.betDownBtn.disabled = state.phase !== "PRE_DEAL";
-  if (state.phase === "HOLD_SELECT") {
-    el.dealDrawBtn.textContent = state.secretRedrawMode
-      ? portraitMobile
-        ? "Xtra Draw"
-        : "Xtra Draw (Enter)"
-      : portraitMobile
-      ? "Draw"
-      : "Draw (Enter)";
-  } else if (state.phase === "RESULT") {
-    el.dealDrawBtn.textContent = state.secretRedrawMode
-      ? portraitMobile
-        ? "Test Mode"
-        : "Test Mode (Enter)"
-      : portraitMobile
-      ? "Next Hand"
-      : "Next Hand (Enter)";
-  } else if (state.phase === "DEALING") {
-    el.dealDrawBtn.textContent = "Dealing...";
-  } else if (state.phase === "DRAWING") {
-    el.dealDrawBtn.textContent = "Drawing...";
-  } else {
-    el.dealDrawBtn.textContent = portraitMobile ? "Deal" : "Deal (Enter)";
-  }
-  el.dealDrawBtn.disabled = state.phase === "DEALING" || state.phase === "DRAWING";
+function renderCardSlot(card, isHidden = false) {
+  const slot = document.createElement("div");
+  slot.className = `card-slot${isHidden ? "" : cardColorClass(card)}`;
+  slot.innerHTML = isHidden ? renderCardInner(null) : renderCardInner(card);
+  return slot;
 }
 
 function setResult(main, sub, toneClass = "") {
-  const portraitMobile = isPortraitMobile();
-  const displaySub = portraitMobile && sub === KEY_HINT_TEXT ? "" : sub;
+  state.resultMain = main;
+  state.resultSub = sub;
+  state.resultTone = toneClass;
   el.resultLine.textContent = main;
-  el.resultLine.classList.remove("is-win", "is-loss");
+  el.resultLine.classList.remove("is-win", "is-loss", "is-neutral", "is-split");
   if (toneClass) el.resultLine.classList.add(toneClass);
-  el.subLine.textContent = displaySub;
+  el.subLine.textContent = sub;
 }
 
-function renderAll() {
-  renderStatus();
-  renderCards();
-  renderPaytable();
+function createHand(cards = [], bet = state.bet, splitAces = false) {
+  return {
+    cards,
+    bet,
+    splitAces,
+    doubled: false,
+    pendingDouble: false,
+    done: false,
+    result: "",
+  };
 }
 
-function adjustBet(delta) {
-  if (state.phase !== "PRE_DEAL") return;
-  if (delta > 0) {
-    if (state.balance >= 10) {
-      state.bet += 10;
-      state.balance -= 10;
-      hiBeep();
-    } else {
-      invalidBeep();
-    }
-  } else if (delta < 0) {
-    if (state.bet > 10) {
-      state.bet -= 10;
-      state.balance += 10;
-      hiBeep();
-    } else {
-      invalidBeep();
-    }
-  }
-  renderStatus();
+function currentHand() {
+  return state.playerHands[state.activeHandIndex] || null;
 }
 
-function dealHand() {
-  if (state.phase !== "PRE_DEAL") return;
-  clearDealTimers();
-  state.secretRedrawMode = false;
-  state.deck = freshDeck();
-  shuffleDeck(state.deck);
-  state.top = 0;
-  state.hand = [null, null, null, null, null];
-  state.hold = [false, false, false, false, false];
-  state.drawStage = ["none", "none", "none", "none", "none"];
-  state.phase = "DEALING";
-  state.highlightedPayKey = null;
-  setResult("Dealing...", "Cards are on the way.");
-  renderAll();
-  for (let i = 0; i < 5; i += 1) {
-    const timer = setTimeout(() => {
-      state.hand[i] = state.deck[state.top];
-      state.top += 1;
-      state.drawStage[i] = "reveal";
-      cardFlipSound();
-      renderCards();
-      const settle = setTimeout(() => {
-        state.drawStage[i] = "none";
-        renderCards();
-      }, 280);
-      dealTimers.push(settle);
-      if (i === 4) {
-        const done = setTimeout(() => {
-          state.phase = "HOLD_SELECT";
-          setResult("Select holds, then Draw.", "Press 1-5 or tap cards to toggle HOLD.");
-          renderAll();
-        }, 290);
-        dealTimers.push(done);
-      }
-    }, 140 * (i + 1));
-    dealTimers.push(timer);
-  }
+function canHit() {
+  const hand = currentHand();
+  return state.phase === "PLAYER_TURN" && hand && !hand.done;
 }
 
-function toggleHold(i) {
-  const canToggleHold = state.phase === "HOLD_SELECT" || (state.secretRedrawMode && state.phase === "RESULT");
-  if (!canToggleHold) return;
-  state.hold[i] = !state.hold[i];
-  holdChime();
-  renderCards();
+function canStand() {
+  const hand = currentHand();
+  return state.phase === "PLAYER_TURN" && hand && !hand.done && !hand.pendingDouble;
 }
 
-function drawHand() {
-  if (state.phase !== "HOLD_SELECT") return;
-  clearDealTimers();
-  ensureDrawCapacity();
-  const drawPositions = [];
-  for (let i = 0; i < 5; i += 1) if (!state.hold[i]) drawPositions.push(i);
-  state.phase = "DRAWING";
-  setResult("Drawing...", "Replacing non-held cards.");
-  renderAll();
-
-  const step = 240;
-  const backDuration = 260;
-  const revealDuration = 320;
-  for (let order = 0; order < drawPositions.length; order += 1) {
-    const i = drawPositions[order];
-    const t0 = order * step;
-    dealTimers.push(
-      setTimeout(() => {
-        state.drawStage[i] = "back";
-        cardFlipSound();
-        renderCards();
-      }, t0)
-    );
-    dealTimers.push(
-      setTimeout(() => {
-        state.hand[i] = state.deck[state.top];
-        state.top += 1;
-        state.drawStage[i] = "reveal";
-        cardFlipSound();
-        renderCards();
-      }, t0 + backDuration)
-    );
-    dealTimers.push(
-      setTimeout(() => {
-        state.drawStage[i] = "none";
-        renderCards();
-      }, t0 + backDuration + revealDuration)
-    );
-  }
-
-  const doneDelay = drawPositions.length > 0 ? (drawPositions.length - 1) * step + backDuration + revealDuration + 20 : 0;
-  dealTimers.push(
-    setTimeout(() => {
-      const result = evaluateHand(state.hand);
-      const multiplier = state.bet / 10;
-      const payout = Math.round(result.base * multiplier);
-      state.highlightedPayKey = result.key;
-
-      if (payout > 0) {
-        if (result.base >= 80) {
-          greatWinningSound();
-        } else if (result.base >= 40) {
-          goodWinningSound();
-        } else {
-          winningSound();
-        }
-        if (state.secretRedrawMode) {
-          setResult(
-            `${result.text} Test payout ${formatCash(payout)}.`,
-            "Secret test mode: Press Enter/space to draw again, Z to exit.",
-            "is-win"
-          );
-        } else {
-          setResult(`${result.text} You win ${formatCash(payout)}.`, "Press Enter/space to play the next hand!", "is-win");
-        }
-      } else {
-        const willEmergencyLoan = state.balance - 10 <= 0;
-        if (!willEmergencyLoan) losingHandSound();
-        if (state.secretRedrawMode) {
-          setResult(
-            `${result.text} Test payout ${formatCash(0)}.`,
-            "Secret test mode: Press Enter/space to draw again, Z to exit.",
-            "is-loss"
-          );
-        } else {
-          setResult(`${result.text} You lose ${formatCash(state.bet)}.`, "Press Enter/space to play the next hand!", "is-loss");
-        }
-      }
-
-      state.balance += payout;
-      state.balance -= 10;
-      if (state.balance <= 0) {
-        state.balance = 90;
-        setTimeout(() => {
-          emergencyLoanSound();
-        }, 750);
-        const taunt = TAUNTS[Math.floor(Math.random() * TAUNTS.length)];
-        setResult("Emergency loan $100!", taunt, "is-loss");
-      }
-      state.bet = 10;
-
-      state.phase = "RESULT";
-      renderAll();
-    }, doneDelay)
+function canDouble() {
+  const hand = currentHand();
+  return (
+    state.phase === "PLAYER_TURN" &&
+    hand &&
+    !hand.done &&
+    hand.cards.length === 2 &&
+    !hand.doubled &&
+    !hand.pendingDouble &&
+    state.balance >= hand.bet
   );
 }
 
-function prepareNextHand() {
-  if (state.phase !== "RESULT") return;
-  state.secretRedrawMode = false;
-  state.phase = "PRE_DEAL";
-  state.hand = [];
-  state.hold = [false, false, false, false, false];
-  state.drawStage = ["none", "none", "none", "none", "none"];
-  state.highlightedPayKey = null;
-  setResult("Ready for next hand.", "Press Deal to receive five new cards.");
+function canSplit() {
+  const hand = currentHand();
+  return (
+    state.phase === "PLAYER_TURN" &&
+    hand &&
+    !hand.done &&
+    state.playerHands.length === 1 &&
+    hand.cards.length === 2 &&
+    hand.cards[0].rank === hand.cards[1].rank &&
+    !hand.pendingDouble &&
+    state.balance >= hand.bet
+  );
+}
+
+function turnHintText() {
+  if (state.testMode) {
+    if (state.testScenarioLabel === "Low Cards") {
+      return "Test: Low cards to test card fanning layout.";
+    }
+    return `Test: ${state.testScenarioLabel}. ${state.testScenarioNote}`;
+  }
+  return KEY_HINT_TEXT;
+}
+
+function inHandHintText() {
+  if (isCompactLayout()) {
+    return canDouble() ? "Hit, Stand or Double?" : "Hit or Stand?";
+  }
+  return canDouble() ? KEY_HINT_TEXT : "Hit = Space, Stand = Enter, Esc = Reset.";
+}
+
+function showTurnPrompt(defaultText = "Your move.") {
+  if (canSplit()) {
+    const splitText = isCompactLayout() ? "Split available: create two hands." : "Split available: create two hands (adds one matching bet).";
+    setResult(splitText, inHandHintText(), "is-split");
+  } else {
+    setResult(defaultText, inHandHintText());
+  }
+}
+
+function settleInitialBlackjack() {
+  const hand = state.playerHands[0];
+  const playerEval = handValue(hand.cards);
+  const dealerEval = handValue(state.dealerHand);
+  state.dealerHoleHidden = false;
+
+  if (playerEval.isBlackjack && dealerEval.isBlackjack) {
+    state.balance += hand.bet;
+    pushSound();
+    setResult("Push. Both have blackjack.", `Net ${formatSigned(0)}. Press Next Hand.`, "is-neutral");
+  } else if (playerEval.isBlackjack) {
+    const payout = Math.round(hand.bet * 2.5);
+    const profit = payout - hand.bet;
+    state.balance += payout;
+    bigWinningSound();
+    setResult(
+      `Blackjack! You win ${formatCash(profit)}.`,
+      `Paid 3:2. Net ${formatSigned(profit)}. Press Next Hand.`,
+      "is-win"
+    );
+  } else {
+    losingHandSound();
+    setResult(
+      "Dealer blackjack.",
+      `You lose ${formatCash(hand.bet)}. Net ${formatSigned(-hand.bet)}. Press Next Hand.`,
+      "is-loss"
+    );
+  }
+
+  state.phase = "ROUND_RESULT";
+}
+
+function completeInitialDeal() {
+  const hand = state.playerHands[0];
+  const playerEval = handValue(hand.cards);
+  const dealerEval = handValue(state.dealerHand);
+
+  if (playerEval.isBlackjack || dealerEval.isBlackjack) {
+    settleInitialBlackjack();
+  } else {
+    state.phase = "PLAYER_TURN";
+    showTurnPrompt("Your move.");
+  }
+
+  renderAll();
+}
+
+function startRound() {
+  if (!(state.phase === "PRE_DEAL" || state.phase === "ROUND_RESULT")) return;
+  clearDealTimers();
+
+  if (state.balance < MIN_BET) {
+    state.balance += 100;
+    emergencyLoanSound();
+    setResult("Emergency loan +$100.", TAUNTS[Math.floor(Math.random() * TAUNTS.length)], "is-loss");
+  }
+
+  if (state.bet > state.balance) {
+    state.bet = Math.max(MIN_BET, Math.min(TABLE_MAX, state.balance - (state.balance % BET_STEP)));
+  }
+
+  if (state.balance < state.bet || state.bet < MIN_BET) {
+    invalidBeep();
+    return;
+  }
+
+  if (needsReshuffleSoon()) {
+    buildFreshShoe();
+  }
+
+  if (state.testMode) {
+    queueScenarioDeck();
+  } else {
+    state.testRoundDeck = null;
+    state.testRoundPos = 0;
+    state.testScenarioLabel = "";
+    state.testScenarioNote = "";
+  }
+
+  const p1 = drawCard();
+  const d1 = drawCard();
+  const p2 = drawCard();
+  const d2 = drawCard();
+
+  state.balance -= state.bet;
+  state.dealerHand = [d1, d2];
+  state.playerHands = [createHand([p1, p2], state.bet, false)];
+  state.activeHandIndex = 0;
+  state.dealerHoleHidden = true;
+  state.phase = "DEALING";
+  state.dealRevealPlayer = [false, false];
+  state.dealRevealDealer = [false, false];
+
+  setResult("Dealing...", "Cards up.");
+  renderAll();
+
+  const steps = [
+    { side: "player", index: 0 },
+    { side: "dealer", index: 0 },
+    { side: "player", index: 1 },
+  ];
+  const stepMs = 180;
+
+  for (let i = 0; i < steps.length; i += 1) {
+    const timer = setTimeout(() => {
+      const step = steps[i];
+      if (step.side === "player") {
+        state.dealRevealPlayer[step.index] = true;
+      } else {
+        state.dealRevealDealer[step.index] = true;
+      }
+      cardFlipSound();
+      renderAll();
+    }, i * stepMs);
+    dealTimers.push(timer);
+  }
+
+  const doneTimer = setTimeout(() => {
+    completeInitialDeal();
+  }, steps.length * stepMs + 20);
+  dealTimers.push(doneTimer);
+}
+
+function advanceTurnOrResolve() {
+  let next = -1;
+  for (let i = state.activeHandIndex + 1; i < state.playerHands.length; i += 1) {
+    if (!state.playerHands[i].done) {
+      next = i;
+      break;
+    }
+  }
+
+  if (next >= 0) {
+    state.activeHandIndex = next;
+    showTurnPrompt(`Hand ${next + 1}: choose action.`);
+    renderAll();
+    return;
+  }
+
+  resolveDealerAndRound();
+}
+
+function hit() {
+  if (!canHit()) {
+    invalidBeep();
+    return;
+  }
+  const hand = currentHand();
+  hand.cards.push(drawCard());
+  cardFlipSound();
+  const evalNow = handValue(hand.cards);
+  if (hand.pendingDouble) {
+    hand.pendingDouble = false;
+    hand.done = true;
+    hand.result = evalNow.isBust ? "BUST" : "STAND";
+    if (evalNow.isBust) {
+      setResult(`Hand ${state.activeHandIndex + 1} busts on double.`, "Dealer turn coming up.", "is-loss");
+    } else {
+      setResult(`Hand ${state.activeHandIndex + 1} receives final double card (${evalNow.best}).`, "Dealer turn coming up.");
+    }
+    advanceTurnOrResolve();
+    return;
+  }
+
+  if (evalNow.isBust) {
+    hand.done = true;
+    hand.result = "BUST";
+    setResult(`Hand ${state.activeHandIndex + 1} busts.`, "Dealer turn coming up.", "is-loss");
+    advanceTurnOrResolve();
+  } else {
+    setResult(`Hand ${state.activeHandIndex + 1}: ${evalNow.best}.`, inHandHintText());
+    renderAll();
+  }
+}
+
+function stand() {
+  if (!canStand()) {
+    invalidBeep();
+    return;
+  }
+  const hand = currentHand();
+  hand.done = true;
+  hand.result = "STAND";
+  setResult(`Hand ${state.activeHandIndex + 1} stands.`, "Dealer turn coming up.");
+  advanceTurnOrResolve();
+}
+
+function doubleDown() {
+  if (!canDouble()) {
+    invalidBeep();
+    return;
+  }
+  const hand = currentHand();
+  state.balance -= hand.bet;
+  hand.bet *= 2;
+  hand.doubled = true;
+  hand.pendingDouble = true;
+  setResult(`Bet doubled to ${formatCash(hand.bet)}.`, "Hit to take one final card.");
+  renderAll();
+}
+
+function split() {
+  if (!canSplit()) {
+    invalidBeep();
+    return;
+  }
+
+  const hand = currentHand();
+  const first = hand.cards[0];
+  const second = hand.cards[1];
+  const splitAces = first.rank === 1;
+
+  state.balance -= hand.bet;
+
+  const handA = createHand([first], hand.bet, splitAces);
+  const handB = createHand([second], hand.bet, splitAces);
+  handA.cards.push(drawCard());
+  cardFlipSound();
+  handB.cards.push(drawCard());
+  cardFlipSound();
+
+  if (splitAces) {
+    handA.done = true;
+    handA.result = "STAND";
+    handB.done = true;
+    handB.result = "STAND";
+  }
+
+  state.playerHands = [handA, handB];
+  state.activeHandIndex = 0;
+
+  if (splitAces) {
+    setResult("Split aces: one card each, auto-stand.", "Dealer turn coming up.");
+    resolveDealerAndRound();
+    return;
+  }
+
+  showTurnPrompt("Split complete. Play hand 1.");
+  renderAll();
+}
+
+function resolveDealerAndRound() {
+  state.phase = "DEALER_TURN";
+  if (state.dealerHoleHidden) cardFlipSound();
+  state.dealerHoleHidden = false;
+
+  let dealerEval = handValue(state.dealerHand);
+  while (dealerEval.best < 17) {
+    state.dealerHand.push(drawCard());
+    cardFlipSound();
+    dealerEval = handValue(state.dealerHand);
+  }
+
+  if (
+    state.testMode &&
+    ["Split Aces", "Player Blackjack", "Split Eights", "Low Cards", "Double Win"].includes(state.testScenarioLabel) &&
+    !dealerEval.isBust &&
+    (dealerEval.best === 17 || dealerEval.best === 18)
+  ) {
+    state.dealerHand.push({ rank: 13, suit: "S" });
+    cardFlipSound();
+    dealerEval = handValue(state.dealerHand);
+  }
+
+  let net = 0;
+  let wins = 0;
+  let pushes = 0;
+  let losses = 0;
+  let bigWin = false;
+
+  for (const hand of state.playerHands) {
+    const playerEval = handValue(hand.cards);
+    let payout = 0;
+
+    if (playerEval.isBust) {
+      hand.result = "LOSE";
+      losses += 1;
+      net -= hand.bet;
+    } else if (dealerEval.isBust) {
+      payout = hand.bet * 2;
+      hand.result = "WIN";
+      wins += 1;
+      net += hand.bet;
+      if (playerEval.best >= 20 || hand.doubled) bigWin = true;
+    } else if (playerEval.best > dealerEval.best) {
+      payout = hand.bet * 2;
+      hand.result = "WIN";
+      wins += 1;
+      net += hand.bet;
+      if (playerEval.best >= 20 || hand.doubled) bigWin = true;
+    } else if (playerEval.best === dealerEval.best) {
+      payout = hand.bet;
+      hand.result = "PUSH";
+      pushes += 1;
+    } else {
+      hand.result = "LOSE";
+      losses += 1;
+      net -= hand.bet;
+    }
+
+    state.balance += payout;
+  }
+
+  if (net > 0) {
+    if (bigWin || net >= state.bet * 2) {
+      bigWinningSound();
+    } else {
+      winningSound();
+    }
+  } else if (net < 0) {
+    losingHandSound();
+  } else {
+    pushSound();
+  }
+
+  const summary = [];
+  if (wins) summary.push(`${wins} win${wins === 1 ? "" : "s"}`);
+  if (pushes) summary.push(`${pushes} push${pushes === 1 ? "" : "es"}`);
+  if (losses) summary.push(`${losses} loss${losses === 1 ? "" : "es"}`);
+
+  let main = `Round complete: ${summary.join(", ")}.`;
+  let sub = `Net ${formatSigned(net)}. Press Next Hand.`;
+  let tone = net > 0 ? "is-win" : net < 0 ? "is-loss" : "is-neutral";
+
+  if (state.balance < MIN_BET) {
+    state.balance += 100;
+    emergencyLoanSound();
+    main = "Emergency loan +$100.";
+    sub = TAUNTS[Math.floor(Math.random() * TAUNTS.length)];
+    tone = "is-loss";
+  }
+
+  if (state.testMode) {
+    sub += ` Test: ${state.testScenarioLabel}.`;
+  }
+
+  state.phase = "ROUND_RESULT";
+  setResult(main, sub, tone);
   renderAll();
 }
 
 function toggleSound() {
   state.soundOn = !state.soundOn;
   renderStatus();
-  if (state.soundOn) startingSound();
+  if (state.soundOn) startupSound();
 }
 
 function openHelp() {
@@ -680,51 +972,327 @@ function openAbout() {
 }
 
 function resetSession() {
-  state.balance = 90;
-  state.bet = 10;
-  state.phase = "PRE_DEAL";
-  state.secretRedrawMode = false;
-  state.hand = [];
-  state.deck = [];
-  state.top = 0;
-  state.hold = [false, false, false, false, false];
-  state.drawStage = ["none", "none", "none", "none", "none"];
-  state.highlightedPayKey = null;
   clearDealTimers();
-  setResult("Session reset.", "Press Deal to start a new game.");
+  state.phase = "PRE_DEAL";
+  state.balance = START_BALANCE;
+  state.bet = MIN_BET;
+  state.dealerHand = [];
+  state.playerHands = [];
+  state.activeHandIndex = 0;
+  state.dealerHoleHidden = true;
+  state.testMode = false;
+  state.testScenarioLabel = "";
+  state.testScenarioNote = "";
+  state.testRoundDeck = null;
+  state.testRoundPos = 0;
+  state.dealRevealPlayer = [false, false];
+  state.dealRevealDealer = [false, false];
+  setResult("Session reset.", KEY_HINT_TEXT);
   renderAll();
 }
 
-function handleEnter() {
-  if (state.phase === "PRE_DEAL") {
-    dealHand();
-  } else if (state.phase === "HOLD_SELECT") {
-    drawHand();
-  } else if (state.phase === "RESULT") {
-    if (state.secretRedrawMode) {
-      state.phase = "HOLD_SELECT";
-      setResult("Secret test mode.", "Adjust holds and press Enter/space to draw again.");
-      renderAll();
+function adjustBet(delta) {
+  if (!(state.phase === "PRE_DEAL" || state.phase === "ROUND_RESULT")) {
+    invalidBeep();
+    return;
+  }
+
+  const next = state.bet + delta;
+  const maxBet = Math.min(TABLE_MAX, state.balance);
+  if (delta > 0) {
+    if (next <= maxBet) {
+      state.bet = next;
+      hiBeep();
     } else {
-      prepareNextHand();
+      invalidBeep();
     }
+  } else if (delta < 0) {
+    if (next >= MIN_BET) {
+      state.bet = next;
+      hiBeep();
+    } else {
+      invalidBeep();
+    }
+  }
+
+  renderStatus();
+}
+
+function toggleTestMode() {
+  if (!(state.phase === "PRE_DEAL" || state.phase === "ROUND_RESULT")) {
+    invalidBeep();
+    return;
+  }
+
+  state.testMode = !state.testMode;
+  if (state.testMode) {
+    state.testScenarioIndex = 0;
+    state.testScenarioLabel = TEST_SCENARIOS[state.testScenarioIndex % TEST_SCENARIOS.length].name;
+    state.testScenarioNote = TEST_SCENARIOS[state.testScenarioIndex % TEST_SCENARIOS.length].note;
+    hiBeep();
+    setResult("Secret test mode enabled.", `First scenario: ${state.testScenarioLabel}. Press N for Next scenario.`, "is-loss");
+  } else {
+    lowBeep();
+    state.testScenarioLabel = "";
+    state.testScenarioNote = "";
+    state.testRoundDeck = null;
+    state.testRoundPos = 0;
+    setResult("Secret test mode disabled.", KEY_HINT_TEXT);
+  }
+  renderAll();
+}
+
+function cycleTestScenario() {
+  if (!state.testMode || !(state.phase === "PRE_DEAL" || state.phase === "ROUND_RESULT")) {
+    invalidBeep();
+    return;
+  }
+  state.testScenarioIndex = (state.testScenarioIndex + 1) % TEST_SCENARIOS.length;
+  const scenario = TEST_SCENARIOS[state.testScenarioIndex];
+  state.testScenarioLabel = scenario.name;
+  state.testScenarioNote = scenario.note;
+  hiBeep();
+  if (scenario.name === "Low Cards") {
+    setResult("Test selected.", "Test: Low cards to test card fanning layout.");
+  } else {
+    setResult("Test selected.", `Test: ${scenario.name}. ${scenario.note}`);
+  }
+  renderAll();
+}
+
+function handlePrimaryAction() {
+  if (state.phase === "ROUND_RESULT") {
+    clearDealTimers();
+    state.phase = "PRE_DEAL";
+    state.dealerHand = [];
+    state.playerHands = [];
+    state.activeHandIndex = 0;
+    state.dealerHoleHidden = true;
+    state.dealRevealPlayer = [false, false];
+    state.dealRevealDealer = [false, false];
+    state.bet = MIN_BET;
+    setResult("Press Deal to start.", KEY_HINT_TEXT);
+    renderAll();
+    return;
+  }
+  if (state.phase === "PRE_DEAL") {
+    startRound();
+  } else {
+    invalidBeep();
   }
 }
 
+function renderPaytable() {
+  el.paytableList.innerHTML = "";
+  for (const row of PAYTABLE) {
+    const li = document.createElement("li");
+    li.innerHTML = `<span>${row.name}</span><span>${row.value}</span>`;
+    el.paytableList.appendChild(li);
+  }
+}
+
+function renderDealer() {
+  el.dealerHand.innerHTML = "";
+  el.dealerHand.classList.toggle("is-fanned", state.dealerHand.length >= 4);
+  for (let i = 0; i < state.dealerHand.length; i += 1) {
+    let hidden = false;
+    if (state.phase === "DEALING") {
+      hidden = !state.dealRevealDealer[i];
+    } else {
+      hidden = state.dealerHoleHidden && i === 1 && state.phase !== "ROUND_RESULT" && state.phase !== "DEALER_TURN";
+    }
+    const slot = renderCardSlot(state.dealerHand[i], hidden);
+    slot.style.zIndex = String(i + 1);
+    el.dealerHand.appendChild(slot);
+  }
+  if (!state.dealerHand.length && state.phase === "PRE_DEAL") {
+    el.dealerHand.appendChild(renderCardSlot(null, true));
+    el.dealerHand.appendChild(renderCardSlot(null, true));
+  } else if (!state.dealerHand.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-hand";
+    empty.textContent = "Waiting for deal";
+    el.dealerHand.appendChild(empty);
+  }
+
+  if (!state.dealerHand.length) {
+    el.dealerTotal.textContent = "Total: -";
+  } else if (state.dealerHoleHidden && state.dealerHand.length > 1) {
+    const upEval = handValue([state.dealerHand[0]]);
+    el.dealerTotal.textContent = `Total: ${upEval.best} + ?`;
+  } else {
+    const evalDealer = handValue(state.dealerHand);
+    el.dealerTotal.textContent = `Total: ${evalDealer.best}`;
+  }
+}
+
+function handHeaderLabel(hand, index) {
+  const evalHand = handValue(hand.cards);
+  const active = state.phase === "PLAYER_TURN" && index === state.activeHandIndex && !hand.done;
+  const parts = [`Hand ${index + 1}`, `Total ${evalHand.best}`, `Bet ${formatCash(hand.bet)}`];
+  if (active) parts.push("ACTIVE");
+  if (hand.result) parts.push(hand.result);
+  return parts.join(" | ");
+}
+
+function renderPlayerHands() {
+  el.playerHands.innerHTML = "";
+
+  if (!state.playerHands.length && state.phase === "PRE_DEAL") {
+    const handWrap = document.createElement("div");
+    handWrap.className = "player-hand";
+    const label = document.createElement("div");
+    label.className = "player-hand-label";
+    label.textContent = `Hand 1 | Total - | Bet ${formatCash(state.bet)}`;
+    const cards = document.createElement("div");
+    cards.className = "hand-cards";
+    cards.appendChild(renderCardSlot(null, true));
+    cards.appendChild(renderCardSlot(null, true));
+    handWrap.appendChild(label);
+    handWrap.appendChild(cards);
+    el.playerHands.appendChild(handWrap);
+    el.playerTotal.textContent = "Total: -";
+    return;
+  }
+
+  if (!state.playerHands.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-hand";
+    empty.textContent = "Place bet and press Deal";
+    el.playerHands.appendChild(empty);
+    el.playerTotal.textContent = "Total: -";
+    return;
+  }
+
+  for (let i = 0; i < state.playerHands.length; i += 1) {
+    const hand = state.playerHands[i];
+    const handWrap = document.createElement("div");
+    handWrap.className = "player-hand";
+    if (state.phase === "PLAYER_TURN" && i === state.activeHandIndex && !hand.done) {
+      handWrap.classList.add("is-active");
+    }
+
+    const label = document.createElement("div");
+    label.className = "player-hand-label";
+    label.textContent = handHeaderLabel(hand, i);
+
+    const cards = document.createElement("div");
+    cards.className = "hand-cards";
+    cards.classList.toggle("is-fanned", hand.cards.length >= 4);
+    for (let c = 0; c < hand.cards.length; c += 1) {
+      const hideDuringDeal = state.phase === "DEALING" && i === 0 && c < 2 && !state.dealRevealPlayer[c];
+      const slot = renderCardSlot(hand.cards[c], hideDuringDeal);
+      slot.style.zIndex = String(c + 1);
+      cards.appendChild(slot);
+    }
+
+    handWrap.appendChild(label);
+    handWrap.appendChild(cards);
+    el.playerHands.appendChild(handWrap);
+  }
+
+  const active = currentHand();
+  if (active) {
+    const evalActive = handValue(active.cards);
+    el.playerTotal.textContent = `Total: ${evalActive.best}`;
+  } else {
+    el.playerTotal.textContent = "Total: -";
+  }
+}
+
+function renderStatus() {
+  const compact = isCompactLayout();
+  const active = currentHand();
+  const displayBet = state.phase === "PLAYER_TURN" && active ? active.bet : state.bet;
+  el.betValue.textContent = formatCash(displayBet);
+  el.balanceValue.textContent = formatCash(state.balance);
+  el.hitBtn.textContent = compact ? "Hit" : "Hit (Space)";
+  el.standBtn.textContent = compact ? "Stand" : "Stand (Enter)";
+  el.doubleBtn.textContent = compact ? "Double" : "Double (D)";
+  el.splitBtn.textContent = compact ? "Split" : "Split (T)";
+  el.aboutBtn.textContent = compact ? "About" : "About (A)";
+  el.helpBtn.textContent = compact ? "Help" : "Help (H)";
+  el.soundBtn.textContent = compact ? `Sound: ${state.soundOn ? "On" : "Off"}` : `Sound: ${state.soundOn ? "On" : "Off"} (S)`;
+
+  if (state.phase === "PRE_DEAL") {
+    el.dealDrawBtn.textContent = "Deal";
+  } else if (state.phase === "ROUND_RESULT") {
+    el.dealDrawBtn.textContent = "Next Hand";
+  } else if (state.phase === "DEALER_TURN") {
+    el.dealDrawBtn.textContent = "Dealer...";
+  } else {
+    el.dealDrawBtn.textContent = "In Hand";
+  }
+
+  el.dealDrawBtn.disabled = !(state.phase === "PRE_DEAL" || state.phase === "ROUND_RESULT");
+  const canBet = state.phase === "PRE_DEAL" || state.phase === "ROUND_RESULT";
+  el.betUpBtn.disabled = !canBet;
+  el.betDownBtn.disabled = !canBet;
+
+  el.hitBtn.disabled = !canHit();
+  el.standBtn.disabled = !canStand();
+  el.doubleBtn.disabled = !canDouble();
+  const splitReady = canSplit();
+  el.splitBtn.disabled = !splitReady;
+  el.splitBtn.classList.toggle("is-split-ready", splitReady);
+
+  const isDoublePrompt = state.resultMain.startsWith("Bet doubled to ");
+  if (isDoublePrompt) {
+    el.subLine.textContent = state.resultSub;
+  } else if (compact && state.phase === "PLAYER_TURN") {
+    el.subLine.textContent = state.resultSub;
+  } else if (state.testMode && compact) {
+    el.subLine.textContent = `Test: ${state.testScenarioLabel}.`;
+  } else if (compact && state.phase !== "ROUND_RESULT") {
+    el.subLine.textContent = "";
+  } else {
+    el.subLine.textContent = state.resultSub;
+  }
+}
+
+function renderAll() {
+  renderStatus();
+  renderDealer();
+  renderPlayerHands();
+}
+
 function wireEvents() {
-  el.dealDrawBtn.addEventListener("click", handleEnter);
-  el.betUpBtn.addEventListener("click", () => adjustBet(10));
-  el.betDownBtn.addEventListener("click", () => adjustBet(-10));
+  el.dealDrawBtn.addEventListener("click", handlePrimaryAction);
+  el.betUpBtn.addEventListener("click", () => adjustBet(BET_STEP));
+  el.betDownBtn.addEventListener("click", () => adjustBet(-BET_STEP));
+  el.hitBtn.addEventListener("click", hit);
+  el.standBtn.addEventListener("click", stand);
+  el.doubleBtn.addEventListener("click", doubleDown);
+  el.splitBtn.addEventListener("click", split);
   el.aboutBtn.addEventListener("click", openAbout);
   el.helpBtn.addEventListener("click", openHelp);
   el.soundBtn.addEventListener("click", toggleSound);
-  el.brandLogo.addEventListener("click", toggleSecretTestModeShortcut);
+  if (el.brandLogo) el.brandLogo.addEventListener("click", toggleTestMode);
 
   document.addEventListener("keydown", (e) => {
+    if (el.helpDialog.open || el.aboutDialog.open) {
+      if (e.key === "Escape") return;
+    }
+
     const key = e.key;
-    if (key === "Enter" || key === " " || e.code === "Space") {
+    if (key === "Enter") {
       e.preventDefault();
-      handleEnter();
+      stand();
+      return;
+    }
+    if (key === " " || e.code === "Space") {
+      e.preventDefault();
+      hit();
+      return;
+    }
+    if (key === "d" || key === "D") {
+      e.preventDefault();
+      doubleDown();
+      return;
+    }
+    if (key === "t" || key === "T") {
+      e.preventDefault();
+      split();
       return;
     }
     if (key === "Escape") {
@@ -747,38 +1315,37 @@ function wireEvents() {
       toggleSound();
       return;
     }
-    if ((key === "z" || key === "Z") && state.phase === "RESULT") {
+    if (key === "z" || key === "Z") {
       e.preventDefault();
-      toggleSecretTestModeShortcut();
+      toggleTestMode();
       return;
     }
-    if (state.phase === "PRE_DEAL") {
-      if (key === "ArrowUp" || key === "ArrowRight") {
-        e.preventDefault();
-        adjustBet(10);
-      } else if (key === "ArrowDown" || key === "ArrowLeft") {
-        e.preventDefault();
-        adjustBet(-10);
-      }
-    }
-    if ((state.phase === "HOLD_SELECT" || (state.secretRedrawMode && state.phase === "RESULT")) && /^[1-5]$/.test(key)) {
+    if (key === "n" || key === "N") {
       e.preventDefault();
-      toggleHold(Number(key) - 1);
+      cycleTestScenario();
+      return;
+    }
+
+    if (key === "ArrowUp" || key === "ArrowRight") {
+      e.preventDefault();
+      adjustBet(BET_STEP);
+      return;
+    }
+    if (key === "ArrowDown" || key === "ArrowLeft") {
+      e.preventDefault();
+      adjustBet(-BET_STEP);
     }
   });
 
   window.addEventListener("resize", () => {
     renderStatus();
-    if (el.subLine.textContent === KEY_HINT_TEXT || el.subLine.textContent === "") {
-      setResult(el.resultLine.textContent, KEY_HINT_TEXT, el.resultLine.classList.contains("is-win") ? "is-win" : el.resultLine.classList.contains("is-loss") ? "is-loss" : "");
-    }
   });
 }
 
 function init() {
   if (el.versionTag) el.versionTag.textContent = `V${APP_VERSION}`;
+  buildFreshShoe();
   renderPaytable();
-  // Ensure portrait mobile starts without keyboard-hint text.
   setResult("Press Deal to start.", KEY_HINT_TEXT);
   renderAll();
   wireEvents();

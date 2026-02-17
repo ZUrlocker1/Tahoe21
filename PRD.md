@@ -26,6 +26,31 @@ Tahoe21 is a browser-based video blackjack game that keeps the Tahoe5 visual fee
 - Bust: immediate hand loss.
 - Insurance: not included in MVP.
 
+### 4.1 Novice Rule Notes: Double and Split
+- Double (double down):
+  - You may use Double only when your current hand has exactly 2 cards.
+  - Double adds one more bet equal to your current hand bet (for example, a $20 hand becomes $40 total at risk).
+  - You receive exactly one additional card.
+  - After that one card, the hand automatically stands (you cannot Hit again on that hand).
+  - If you win, payout is based on the doubled bet; if you lose, you lose the doubled bet.
+- Split:
+  - You may Split only when your first 2 cards are the same rank (for example, 8-8, Q-Q, A-A).
+  - Splitting creates two separate hands, and a second bet equal to your original bet is placed.
+  - Each new hand gets one additional card, then each hand is played independently.
+  - MVP limit is one split total (you cannot split again after already splitting).
+  - Split aces receive one card each and then automatically stand.
+  - Double after split is allowed (except split aces, which auto-stand).
+
+### 4.2 Novice Rule Notes: Insurance (Reference, Not in MVP)
+- Insurance is an optional side bet offered only when the dealer's visible card is an Ace.
+- The insurance bet is usually up to half of the player's main bet.
+- Insurance pays 2:1 if the dealer has blackjack.
+- If the dealer does not have blackjack, the insurance bet is lost.
+- Insurance is separate from the main hand result:
+  - You can lose the hand but win insurance, or
+  - Win/push the hand but lose insurance.
+- In this Tahoe21 MVP, insurance is documented for future support but is not offered in gameplay.
+
 ## 5. Economy + Session Rules
 - Starting bankroll: $90 (match Tahoe baseline feel).
 - Bet step: $10; default bet $10; min $10; max constrained by bankroll and table limit.

@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Tahoe 5</title>
-    <link rel="stylesheet" href="./styles.css?v=1.5.0" />
+    <title>Tahoe21</title>
+    <link rel="stylesheet" href="./styles.css?v=0.4.0" />
   </head>
   <body>
     <main class="app">
@@ -12,21 +12,50 @@
         <div class="brand">
           <img class="brand-logo" src="./assets/tahoe-21-logo.png" alt="Tahoe 21 logo" />
           <div class="brand-text">
-            <h1>Tahoe 5</h1>
-            <p>Classic Video Poker<span class="subtitle-break"><span class="subtitle-dash"> - </span>Vibe coded in one hour!</span></p>
+            <h1>Tahoe21</h1>
+            <p>Classic Video Blackjack<span class="subtitle-break"><span class="subtitle-dash"> - </span>retro table feel, web speed.</span></p>
           </div>
         </div>
         <div class="header-action">
-          <button id="dealDrawBtn" class="btn primary" type="button">Deal (Enter)</button>
+          <button id="dealDrawBtn" class="btn primary" type="button">Deal</button>
         </div>
       </header>
 
       <section class="table-area">
-        <div class="cards" id="cards" aria-label="Hand cards"></div>
-        <aside class="paytable" aria-label="Paytable">
-          <h2>Payoffs (Base @ $10)</h2>
-          <ul id="paytableList"></ul>
-        </aside>
+        <div class="cards" aria-label="Blackjack table">
+          <section class="hand-row dealer-row" aria-label="Dealer hand">
+            <div class="hand-main">
+              <div class="hand-info-box">
+                <h2>Dealer</h2>
+                <span id="dealerTotal" class="hand-total">Total: -</span>
+              </div>
+              <div id="dealerHand" class="hand-cards"></div>
+            </div>
+          </section>
+
+          <section class="hand-row player-row" aria-label="Player hand area">
+            <div class="hand-main">
+              <div class="hand-info-box">
+                <h2>Player</h2>
+                <span id="playerTotal" class="hand-total">Total: -</span>
+              </div>
+              <div id="playerHands" class="player-hands"></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="right-rail" aria-label="Rules and actions">
+          <aside class="paytable" aria-label="Blackjack rules and payouts">
+            <h2>Rules &amp; Payouts</h2>
+            <ul id="paytableList"></ul>
+          </aside>
+          <div class="side-actions" aria-label="Hand actions">
+            <button id="hitBtn" class="btn secondary" type="button">Hit (Space)</button>
+            <button id="standBtn" class="btn secondary" type="button">Stand (Enter)</button>
+            <button id="doubleBtn" class="btn secondary" type="button">Double (D)</button>
+            <button id="splitBtn" class="btn secondary" type="button">Split (T)</button>
+          </div>
+        </section>
       </section>
 
       <section class="status-row" aria-label="Game status and result">
@@ -47,7 +76,7 @@
 
         <section class="result">
           <p id="resultLine">Press Deal to start.</p>
-          <p id="subLine">Keys: 1-5 hold, arrows bet, Enter/Space deal/draw, S sound, H help, Esc reset.</p>
+          <p id="subLine">Hit = Space, Stand = Enter, D = Double, T = Split, Esc = Reset.</p>
         </section>
       </section>
 
@@ -59,21 +88,23 @@
             <button id="soundBtn" class="btn secondary" type="button" aria-label="Toggle sound">Sound: On (S)</button>
           </div>
           <div class="utility-meta">
-            <span id="versionTag" class="header-version">V1.5</span>
-            <p class="header-copyright">Copyright (C) 1992-2026 M. Zack Urlocker</p>
+            <span id="versionTag" class="header-version">V0.4</span>
+            <p class="header-copyright">Copyright (C) 2026 M. Zack Urlocker</p>
           </div>
         </div>
       </section>
     </main>
 
     <dialog id="helpDialog">
-      <h2>How To Play</h2>
-      <p>1. Adjust your bet before dealing.</p>
-      <p>2. Press Deal, then select cards to Hold.</p>
-      <p>3. Press Draw to replace non-held cards.</p>
-      <p>4. Payout uses classic Tahoe values and bet multiplier.</p>
+      <h2>How To Play Tahoe21</h2>
+      <p>1. Adjust bet, then press Deal.</p>
+      <p>2. Choose actions for the active hand: Hit means draw another card. Stand means don't draw.</p>
+      <p>&nbsp;&nbsp;&nbsp;You can also Double your bet, but that means you draw only 1 more card.</p>
+      <p>&nbsp;&nbsp;&nbsp;If you draw two cards of the same value, you can split into two separate hands.</p>
+      <p>3. Dealer reveals hole card and draws to 17 (stands on soft 17).</p>
+      <p>4. Blackjack pays 3:2, regular win pays 1:1, push returns the bet.</p>
       <h3>Keyboard Controls</h3>
-      <p>Enter/Space = Deal/Draw, 1-5 = Hold toggle, Arrows = Bet, S = Sound, H = Help, Esc = Reset</p>
+      <p>Hit = Space, Stand = Enter, D = Double, T = Split, Esc = Reset</p>
       <form method="dialog">
         <button class="btn primary" value="close">Close</button>
       </form>
@@ -82,15 +113,15 @@
     <dialog id="aboutDialog">
       <h2>About</h2>
       <img class="about-logo" src="./assets/tahoe-21-logo.png" alt="Tahoe 21 logo" />
-      <p>This is based on a shareware game I published in 1992 for DOS, Windows and Atari Portfolio. Fortunately, I lost the source code long ago!</p>
-      <p>Last summer, I coded a text version using Turbo Pascal 4.0 in a DOS Box with some ChatGPT help. I wrote most of the code (~600 lines) by hand. ChatGPT wrote a good shuffle algorithm and some music routines. The latter didn't work and had to be corrected by hand.</p>
-      <p>Now with ChatGPT 5.3 and the CodeX app, I created a PRD from the Pascal code. Then I had it generate a VS Code project. It created the JavaScript app (~700 lines) and related html and css files (another 700 lines.) It compiled and ran first time! I added graphics for the cards and then made changes via CodeX prompts generating a few hundred more lines of code.</p>
-      <p>I did not write or review any code. It just worked!</p>
+      <p>Tahoe21 is a Blackjack video game that runs in a web browser. </p>
+      <p>It is based on a shareware game I wrote in 1992 using Turbo Pascal. Fortunately I lost the source code and all the EXEs!</p>
+      <p>So I vibe coded it by creating a PRD with Codex and VS Code and re-using the overall layout and style of the Tahoe5 poker game I created previously. I added features like Double and Split even though I didn't know how those work. Luckily ChatGPT explained it to me in the PRD!</p>
+      <p>The first working prototype took about 15 minutes. Then about 2 hours to adjust the game play and layout.</p>
       <form method="dialog">
         <button class="btn primary" value="close">Close</button>
       </form>
     </dialog>
 
-    <script src="./app.js?v=1.5.0"></script>
+    <script src="./app.js?v=0.4.0"></script>
   </body>
 </html>
