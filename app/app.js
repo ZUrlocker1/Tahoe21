@@ -1,12 +1,12 @@
 "use strict";
 
-const APP_VERSION = "0.6";
+const APP_VERSION = "0.7";
 const MIN_BET = 10;
 const BET_STEP = 10;
 const START_BALANCE = 90;
 const TABLE_MAX = 500;
 const SHOE_DECKS = 6;
-const DEALER_REVEAL_STEP_MS = 500;
+const DEALER_REVEAL_STEP_MS = 400;
 const KEY_HINT_TEXT = "Hit = Space, Stand = Enter, D = Double, T = Split, Esc = Reset.";
 
 const PAYTABLE = [
@@ -743,7 +743,7 @@ function startRound() {
     { side: "dealer", index: 0 },
     { side: "player", index: 1 },
   ];
-  const stepMs = 300;
+  const stepMs = 270;
 
   for (let i = 0; i < steps.length; i += 1) {
     const timer = setTimeout(() => {
