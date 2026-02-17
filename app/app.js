@@ -13,9 +13,7 @@ const PAYTABLE = [
   { name: "Blackjack", value: "3:2" },
   { name: "Regular Win", value: "1:1" },
   { name: "Push", value: "Bet back" },
-  { name: "Dealer", value: "Stands soft 17" },
-  { name: "Split", value: "One split max" },
-  { name: "Double", value: "Two cards only" },
+  { name: "Dealer stands on soft 17.", value: "" },
 ];
 
 const SUITS = ["C", "D", "H", "S"];
@@ -1140,7 +1138,11 @@ function renderPaytable() {
   el.paytableList.innerHTML = "";
   for (const row of PAYTABLE) {
     const li = document.createElement("li");
-    li.innerHTML = `<span>${row.name}</span><span>${row.value}</span>`;
+    if (row.value) {
+      li.innerHTML = `<span>${row.name}</span><span>${row.value}</span>`;
+    } else {
+      li.innerHTML = `<span>${row.name}</span>`;
+    }
     el.paytableList.appendChild(li);
   }
 }
@@ -1331,13 +1333,22 @@ function wireEvents() {
     }
 
     const key = e.key;
+    const primaryEnabled = state.phase === "PRE_DEAL" || state.phase === "ROUND_RESULT";
     if (key === "Enter") {
       e.preventDefault();
+      if (primaryEnabled) {
+        handlePrimaryAction();
+        return;
+      }
       stand();
       return;
     }
     if (key === " " || e.code === "Space") {
       e.preventDefault();
+      if (primaryEnabled) {
+        handlePrimaryAction();
+        return;
+      }
       hit();
       return;
     }
