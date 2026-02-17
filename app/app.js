@@ -601,9 +601,12 @@ function turnHintText() {
 }
 
 function inHandHintText() {
+  const isSecondSplitHand = state.playerHands.length > 1 && state.activeHandIndex === 1 && state.phase === "PLAYER_TURN";
   if (isCompactLayout()) {
+    if (isSecondSplitHand) return "Hit, Stand or Double?";
     return canDouble() ? "Hit, Stand or Double?" : "Hit or Stand?";
   }
+  if (isSecondSplitHand) return "Hit = Space, Stand = Enter, D = Double.";
   return canDouble() ? KEY_HINT_TEXT : "Hit = Space, Stand = Enter, Esc = Reset.";
 }
 
@@ -750,7 +753,11 @@ function advanceTurnOrResolve() {
 
   if (next >= 0) {
     state.activeHandIndex = next;
-    showTurnPrompt(`Hand ${next + 1}: choose action.`);
+    if (state.playerHands.length > 1 && next === 1) {
+      showTurnPrompt("Play the second hand.");
+    } else {
+      showTurnPrompt(`Play hand ${next + 1}.`);
+    }
     renderAll();
     return;
   }
@@ -853,7 +860,7 @@ function split() {
     return;
   }
 
-  showTurnPrompt("Split complete. Play hand 1.");
+  showTurnPrompt("Split complete. Play first hand.");
   renderAll();
 }
 
@@ -1116,21 +1123,19 @@ function renderDealer() {
   }
 
   if (!state.dealerHand.length) {
-    el.dealerTotal.textContent = "Total: -";
+    el.dealerTotal.textContent = "Hand: -";
   } else if (state.dealerHoleHidden && state.dealerHand.length > 1) {
     const upEval = handValue([state.dealerHand[0]]);
-    el.dealerTotal.textContent = `Total: ${upEval.best} + ?`;
+    el.dealerTotal.textContent = `Hand: ${upEval.best} + ?`;
   } else {
     const evalDealer = handValue(state.dealerHand);
-    el.dealerTotal.textContent = `Total: ${evalDealer.best}`;
+    el.dealerTotal.textContent = `Hand: ${evalDealer.best}`;
   }
 }
 
 function handHeaderLabel(hand, index) {
   const evalHand = handValue(hand.cards);
-  const active = state.phase === "PLAYER_TURN" && index === state.activeHandIndex && !hand.done;
-  const parts = [`Hand ${index + 1}`, `Total ${evalHand.best}`, `Bet ${formatCash(hand.bet)}`];
-  if (active) parts.push("ACTIVE");
+  const parts = [`Hand ${evalHand.best}`, `Bet ${formatCash(hand.bet)}`];
   if (hand.result) parts.push(hand.result);
   return parts.join(" | ");
 }
@@ -1147,7 +1152,8 @@ function renderPlayerHands() {
     cards.appendChild(renderCardSlot(null, true));
     handWrap.appendChild(cards);
     el.playerHands.appendChild(handWrap);
-    el.playerTotal.textContent = "Total: -";
+    el.playerTotal.textContent = "Hand: -";
+    el.playerHands.classList.remove("is-split");
     return;
   }
 
@@ -1156,9 +1162,12 @@ function renderPlayerHands() {
     empty.className = "empty-hand";
     empty.textContent = "Place bet and press Deal";
     el.playerHands.appendChild(empty);
-    el.playerTotal.textContent = "Total: -";
+    el.playerTotal.textContent = "Hand: -";
+    el.playerHands.classList.remove("is-split");
     return;
   }
+
+  el.playerHands.classList.toggle("is-split", state.playerHands.length > 1);
 
   for (let i = 0; i < state.playerHands.length; i += 1) {
     const hand = state.playerHands[i];
@@ -1190,11 +1199,13 @@ function renderPlayerHands() {
   }
 
   const active = currentHand();
-  if (active) {
+  if (state.playerHands.length > 1) {
+    el.playerTotal.textContent = "";
+  } else if (active) {
     const evalActive = handValue(active.cards);
-    el.playerTotal.textContent = `Total: ${evalActive.best}`;
+    el.playerTotal.textContent = `Hand: ${evalActive.best}`;
   } else {
-    el.playerTotal.textContent = "Total: -";
+    el.playerTotal.textContent = "Hand: -";
   }
 }
 

@@ -845,8 +845,13 @@ body {
 
   .hand-main,
   .player-hand {
-    grid-template-columns: minmax(74px, 86px) minmax(0, 1fr);
+    grid-template-columns: minmax(68px, 80px) minmax(0, 1fr);
     gap: 0.24rem;
+  }
+
+  .player-hands.is-split .player-hand {
+    grid-template-columns: 1fr;
+    gap: 0.18rem;
   }
 
   .hand-info-box,
