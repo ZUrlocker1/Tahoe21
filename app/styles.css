@@ -195,7 +195,7 @@ body {
   align-items: flex-start;
   overflow: hidden;
   gap: 0.42rem;
-  min-height: 176px;
+  min-height: 190px;
 }
 
 .player-hands {
@@ -243,8 +243,8 @@ body {
 }
 
 .card-slot {
-  width: 118px;
-  min-height: 176px;
+  width: 128px;
+  min-height: 190px;
   background: var(--card);
   color: var(--ink);
   border-radius: 10px;
@@ -255,7 +255,7 @@ body {
 }
 
 .hand-cards.is-fanned > .card-slot + .card-slot {
-  margin-left: -59px;
+  margin-left: -64px;
 }
 
 .card-slot.red {
@@ -358,7 +358,7 @@ body {
 }
 
 .empty-hand {
-  min-height: 176px;
+  min-height: 190px;
   border: 1px dashed rgba(201, 228, 213, 0.35);
   border-radius: 8px;
   display: grid;
@@ -884,14 +884,14 @@ body {
     gap: 0.42rem;
     margin-top: 0.08rem;
     display: grid;
-    grid-template-columns: 128px minmax(0, 1fr);
+    grid-template-columns: 152px minmax(0, 1fr);
   }
 
   .status-panel {
-    grid-template-columns: 1fr;
-    gap: 0.24rem;
-    min-width: 88px;
-    max-width: 104px;
+    grid-template-columns: minmax(82px, 94px) minmax(68px, 78px);
+    gap: 0.16rem;
+    min-width: 0;
+    max-width: none;
   }
 
   .status-item {
