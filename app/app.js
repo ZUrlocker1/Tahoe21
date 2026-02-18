@@ -9,6 +9,7 @@ const SHOE_DECKS = 6;
 const DEALER_REVEAL_STEP_MS = 400;
 const SPLIT_DEAL_STEP_MS = 620;
 const KEY_HINT_TEXT = "Hit = Space, Stand = Enter, D = Double, T = Split, Esc = Reset.";
+const HAND_TOTAL_PREFIX = "\u00A0\u00A0";
 
 const PAYTABLE = [
   { name: "Blackjack", value: "3:2" },
@@ -1207,13 +1208,13 @@ function renderDealer() {
   }
 
   if (!state.dealerHand.length) {
-    el.dealerTotal.textContent = "Hand:";
+    el.dealerTotal.textContent = HAND_TOTAL_PREFIX;
   } else if (state.dealerHoleHidden && state.dealerHand.length > 1) {
     const upEval = handValue([state.dealerHand[0]]);
-    el.dealerTotal.textContent = `Hand: ${upEval.best} + ?`;
+    el.dealerTotal.textContent = `${HAND_TOTAL_PREFIX}${upEval.best} + ?`;
   } else {
     const evalDealer = handValue(state.dealerHand);
-    el.dealerTotal.textContent = `Hand: ${evalDealer.best}`;
+    el.dealerTotal.textContent = `${HAND_TOTAL_PREFIX}${evalDealer.best}`;
   }
 }
 
@@ -1236,7 +1237,7 @@ function renderPlayerHands() {
     cards.appendChild(renderCardSlot(null, true));
     handWrap.appendChild(cards);
     el.playerHands.appendChild(handWrap);
-    el.playerTotal.textContent = "Hand:";
+    el.playerTotal.textContent = HAND_TOTAL_PREFIX;
     el.playerHands.classList.remove("is-split");
     return;
   }
@@ -1246,7 +1247,7 @@ function renderPlayerHands() {
     empty.className = "empty-hand";
     empty.textContent = "Place bet and press Deal";
     el.playerHands.appendChild(empty);
-    el.playerTotal.textContent = "Hand:";
+    el.playerTotal.textContent = HAND_TOTAL_PREFIX;
     el.playerHands.classList.remove("is-split");
     return;
   }
@@ -1287,9 +1288,9 @@ function renderPlayerHands() {
     el.playerTotal.textContent = "";
   } else if (active) {
     const evalActive = handValue(active.cards);
-    el.playerTotal.textContent = `Hand: ${evalActive.best}`;
+    el.playerTotal.textContent = `${HAND_TOTAL_PREFIX}${evalActive.best}`;
   } else {
-    el.playerTotal.textContent = "Hand:";
+    el.playerTotal.textContent = HAND_TOTAL_PREFIX;
   }
 }
 
