@@ -19,6 +19,7 @@ Tahoe21 is a browser-based video blackjack game that keeps the Tahoe5 visual fee
 - Card values: 2-10 face value, J/Q/K = 10, Ace = 1 or 11.
 - Blackjack: player two-card 21 pays 3:2.
 - Dealer behavior: dealer stands on soft 17 (S17).
+  - Soft 17 means a dealer total of 17 that includes an Ace counted as 11 (example: Ace + 6).
 - Player actions: Hit, Stand, Double (on first two cards only), Split (one split max total; same-rank only; no resplit aces in MVP).
 - Double after split: allowed.
 - Split aces: one card drawn per ace, then hand auto-stands.

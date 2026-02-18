@@ -1,13 +1,13 @@
 "use strict";
 
-const APP_VERSION = "0.7";
+const APP_VERSION = "0.8";
 const MIN_BET = 10;
 const BET_STEP = 10;
 const START_BALANCE = 90;
 const TABLE_MAX = 500;
 const SHOE_DECKS = 6;
 const DEALER_REVEAL_STEP_MS = 400;
-const SPLIT_DEAL_STEP_MS = 520;
+const SPLIT_DEAL_STEP_MS = 620;
 const KEY_HINT_TEXT = "Hit = Space, Stand = Enter, D = Double, T = Split, Esc = Reset.";
 
 const PAYTABLE = [
@@ -56,16 +56,6 @@ const TEST_SCENARIOS = [
     note: "Split aces scenario where dealer should bust.",
   },
   {
-    name: "Player Blackjack",
-    deck: ["AS", "9C", "KH", "7D", "5S", "6H"],
-    note: "Natural blackjack should pay 3:2.",
-  },
-  {
-    name: "Split Eights",
-    deck: ["8H", "9C", "8D", "7S", "TH", "9D", "KC"],
-    note: "Split eights scenario where dealer should bust.",
-  },
-  {
     name: "Low Cards",
     deck: [
       "2H",
@@ -96,6 +86,16 @@ const TEST_SCENARIOS = [
       "7S",
     ],
     note: "Low cards to test card fanning layout.",
+  },
+  {
+    name: "Player Blackjack",
+    deck: ["AS", "9C", "KH", "7D", "5S", "6H"],
+    note: "Natural blackjack should pay 3:2.",
+  },
+  {
+    name: "Split Eights",
+    deck: ["8H", "9C", "8D", "7S", "TH", "9D", "KC"],
+    note: "Split eights scenario where dealer should bust.",
   },
   {
     name: "Double Win",
@@ -1010,12 +1010,20 @@ function finalizeDealerRound(dealerEval) {
     pushSound();
   }
 
-  const summary = [];
-  if (wins) summary.push(`${wins} win${wins === 1 ? "" : "s"}`);
-  if (pushes) summary.push(`${pushes} push${pushes === 1 ? "" : "es"}`);
-  if (losses) summary.push(`${losses} loss${losses === 1 ? "" : "es"}`);
-
-  let main = `Round complete: ${summary.join(", ")}.`;
+  let main = "Results:";
+  if (wins > 0 && losses === 0 && pushes === 0) {
+    main = "Results: You win!";
+  } else if (losses > 0 && wins === 0 && pushes === 0) {
+    main = "Results: You lose!";
+  } else if (pushes > 0 && wins === 0 && losses === 0) {
+    main = "Results: Push.";
+  } else if (wins > 0 && losses > 0) {
+    main = "Results: Mixed outcome.";
+  } else if (wins > 0 && pushes > 0) {
+    main = "Results: Win with push.";
+  } else if (losses > 0 && pushes > 0) {
+    main = "Results: Loss with push.";
+  }
   let sub = `Net ${formatSigned(net)}. Press Next Hand.`;
   let tone = net > 0 ? "is-win" : net < 0 ? "is-loss" : "is-neutral";
 
@@ -1199,7 +1207,7 @@ function renderDealer() {
   }
 
   if (!state.dealerHand.length) {
-    el.dealerTotal.textContent = "Hand: -";
+    el.dealerTotal.textContent = "Hand:";
   } else if (state.dealerHoleHidden && state.dealerHand.length > 1) {
     const upEval = handValue([state.dealerHand[0]]);
     el.dealerTotal.textContent = `Hand: ${upEval.best} + ?`;
@@ -1228,7 +1236,7 @@ function renderPlayerHands() {
     cards.appendChild(renderCardSlot(null, true));
     handWrap.appendChild(cards);
     el.playerHands.appendChild(handWrap);
-    el.playerTotal.textContent = "Hand: -";
+    el.playerTotal.textContent = "Hand:";
     el.playerHands.classList.remove("is-split");
     return;
   }
@@ -1238,7 +1246,7 @@ function renderPlayerHands() {
     empty.className = "empty-hand";
     empty.textContent = "Place bet and press Deal";
     el.playerHands.appendChild(empty);
-    el.playerTotal.textContent = "Hand: -";
+    el.playerTotal.textContent = "Hand:";
     el.playerHands.classList.remove("is-split");
     return;
   }
@@ -1281,7 +1289,7 @@ function renderPlayerHands() {
     const evalActive = handValue(active.cards);
     el.playerTotal.textContent = `Hand: ${evalActive.best}`;
   } else {
-    el.playerTotal.textContent = "Hand: -";
+    el.playerTotal.textContent = "Hand:";
   }
 }
 

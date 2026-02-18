@@ -180,7 +180,7 @@ body {
   margin: 0;
   font-size: 0.82rem;
   letter-spacing: 0.07em;
-  text-transform: uppercase;
+  text-transform: none;
   color: #dcefe3;
 }
 
@@ -535,17 +535,31 @@ body {
 }
 
 .utility-meta {
-  width: 100%;
+  width: calc(100% + 2rem);
+  margin-left: -1rem;
+  padding: 0 1rem;
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: baseline;
   gap: 0;
+}
+
+.header-promo {
+  margin: 0.12rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.header-promo a {
+  color: #df5151;
+  text-decoration: underline;
 }
 
 .header-version {
   margin: 0.12rem 0 0;
   color: var(--muted);
   font-size: 0.88rem;
+  margin-left: auto;
 }
 
 .header-copyright {
@@ -740,14 +754,16 @@ body {
   }
 
   .header-copyright,
-  .header-version {
+  .header-version,
+  .header-promo {
     font-size: 0.74rem;
   }
 
   .utility-meta {
-    justify-content: flex-end;
-    margin-left: auto;
-    width: auto;
+    justify-content: flex-start;
+    margin-left: -1rem;
+    width: calc(100% + 2rem);
+    padding: 0 1rem;
   }
 
   .side-actions .btn {
@@ -779,22 +795,24 @@ body {
   }
 
   .header-action .btn {
-    width: 8rem;
+    width: 6.8rem;
+    min-height: 39px;
+    font-size: 0.9rem;
     margin-top: 0;
   }
 
   .hand-cards {
     gap: 0.35rem;
-    min-height: 108px;
+    min-height: 120px;
   }
 
   .card-slot {
-    width: 72px;
-    min-height: 108px;
+    width: 80px;
+    min-height: 120px;
   }
 
   .hand-cards.is-fanned > .card-slot + .card-slot {
-    margin-left: -36px;
+    margin-left: -40px;
   }
 
   .card-corner.top {
@@ -844,8 +862,38 @@ body {
 
   .hand-main,
   .player-hand {
-    grid-template-columns: minmax(68px, 80px) minmax(0, 1fr);
+    grid-template-columns: minmax(58px, 68px) minmax(0, 1fr);
     gap: 0.24rem;
+  }
+
+  .status-row {
+    gap: 0.42rem;
+    margin-top: 0.08rem;
+  }
+
+  .status-item {
+    padding: 0.16rem 0.24rem;
+  }
+
+  .status-item span {
+    font-size: 0.68rem;
+    line-height: 1;
+  }
+
+  .status-item strong {
+    font-size: 0.9rem;
+    line-height: 1;
+  }
+
+  .bet-controls .btn.small {
+    min-width: 22px;
+    min-height: 22px;
+    padding: 0.08rem;
+    font-size: 0.72rem;
+  }
+
+  .result {
+    padding: 0.2rem 0.32rem;
   }
 
   .player-hands.is-split .player-hand {
@@ -860,13 +908,15 @@ body {
   }
 
   .header-copyright,
-  .header-version {
+  .header-version,
+  .header-promo {
     font-size: 0.66rem;
   }
 
   .utility-meta {
-    justify-content: flex-end;
-    margin-left: auto;
-    width: auto;
+    justify-content: flex-start;
+    margin-left: -1rem;
+    width: calc(100% + 2rem);
+    padding: 0 1rem;
   }
 }

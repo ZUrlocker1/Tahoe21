@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Tahoe21</title>
-    <link rel="stylesheet" href="./styles.css?v=0.7.0" />
+    <link rel="stylesheet" href="./styles.css?v=0.8.0" />
   </head>
   <body>
     <main class="app">
@@ -13,7 +13,7 @@
           <img class="brand-logo" src="./assets/tahoe-21-logo.png" alt="Tahoe 21 logo" />
           <div class="brand-text">
             <h1>Tahoe21</h1>
-            <p>Classic Video Blackjack<span class="subtitle-break"><span class="subtitle-dash"> - </span>vibe coded!</span></p>
+            <p>Blackjack vibe coded!</p>
           </div>
         </div>
         <div class="header-action">
@@ -27,7 +27,7 @@
             <div class="hand-main">
               <div class="hand-info-box">
                 <h2>Dealer</h2>
-                <span id="dealerTotal" class="hand-total">Hand: -</span>
+                <span id="dealerTotal" class="hand-total">Hand:</span>
               </div>
               <div id="dealerHand" class="hand-cards"></div>
             </div>
@@ -37,7 +37,7 @@
             <div class="hand-main">
               <div class="hand-info-box">
                 <h2>Player</h2>
-                <span id="playerTotal" class="hand-total">Hand: -</span>
+                <span id="playerTotal" class="hand-total">Hand:</span>
               </div>
               <div id="playerHands" class="player-hands"></div>
             </div>
@@ -46,7 +46,7 @@
 
         <section class="right-rail" aria-label="Rules and actions">
           <aside class="paytable" aria-label="Blackjack rules and payouts">
-            <h2>Rules &amp; Payouts</h2>
+            <h2>Payout</h2>
             <ul id="paytableList"></ul>
           </aside>
           <div class="side-actions" aria-label="Hand actions">
@@ -88,7 +88,8 @@
             <button id="soundBtn" class="btn secondary" type="button" aria-label="Toggle sound">Sound: On (S)</button>
           </div>
           <div class="utility-meta">
-            <span id="versionTag" class="header-version">V0.7</span>
+            <p class="header-promo">Try <a href="https://zurlocker1.github.io/Tahoe5/" target="_blank" rel="noopener noreferrer">Tahoe5</a> video poker!</p>
+            <span id="versionTag" class="header-version">V0.8</span>
             <p class="header-copyright">Copyright (C) 2026 M. Zack Urlocker</p>
           </div>
         </div>
@@ -122,6 +123,6 @@
       </form>
     </dialog>
 
-    <script src="./app.js?v=0.7.0"></script>
+    <script src="./app.js?v=0.8.0"></script>
   </body>
 </html>
