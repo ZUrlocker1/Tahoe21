@@ -7,6 +7,7 @@ const START_BALANCE = 90;
 const TABLE_MAX = 500;
 const SHOE_DECKS = 6;
 const DEALER_REVEAL_STEP_MS = 400;
+const SPLIT_DEAL_STEP_MS = 520;
 const KEY_HINT_TEXT = "Hit = Space, Stand = Enter, D = Double, T = Split, Esc = Reset.";
 
 const PAYTABLE = [
@@ -251,6 +252,14 @@ function startupSound() {
     { f: 392, d: 100 },
     { f: 523, d: 130 },
   ]);
+}
+
+function splitModeSound() {
+  playSequence([
+    { f: 392, d: 75, t: "triangle", v: 0.05 },
+    { f: 523, d: 85, t: "triangle", v: 0.052 },
+    { f: 659, d: 120, t: "triangle", v: 0.055 },
+  ], 22);
 }
 
 function cardFlipSound() {
@@ -851,6 +860,8 @@ function split() {
     return;
   }
 
+  clearDealTimers();
+
   const hand = currentHand();
   const first = hand.cards[0];
   const second = hand.cards[1];
@@ -860,29 +871,45 @@ function split() {
 
   const handA = createHand([first], hand.bet, splitAces);
   const handB = createHand([second], hand.bet, splitAces);
-  handA.cards.push(drawCard());
-  cardFlipSound();
-  handB.cards.push(drawCard());
-  cardFlipSound();
-
-  if (splitAces) {
-    handA.done = true;
-    handA.result = "STAND";
-    handB.done = true;
-    handB.result = "STAND";
-  }
 
   state.playerHands = [handA, handB];
   state.activeHandIndex = 0;
+  state.phase = "SPLIT_DEALING";
 
-  if (splitAces) {
-    setResult("Split aces: one card each, auto-stand.", "Dealer turn coming up.");
-    resolveDealerAndRound();
-    return;
-  }
-
-  showTurnPrompt("Split complete. Play first hand.");
+  splitModeSound();
+  setResult("Split in progress...", "Dealing split cards.", "is-split");
   renderAll();
+
+  const revealFirstTimer = setTimeout(() => {
+    handA.cards.push(drawCard());
+    cardFlipSound();
+    renderAll();
+  }, SPLIT_DEAL_STEP_MS);
+  dealTimers.push(revealFirstTimer);
+
+  const revealSecondTimer = setTimeout(() => {
+    handB.cards.push(drawCard());
+    cardFlipSound();
+
+    if (splitAces) {
+      handA.done = true;
+      handA.result = "STAND";
+      handB.done = true;
+      handB.result = "STAND";
+      setResult("Split aces: one card each, auto-stand.", "Dealer turn coming up.");
+      renderAll();
+      const dealerTimer = setTimeout(() => {
+        resolveDealerAndRound();
+      }, Math.floor(SPLIT_DEAL_STEP_MS * 0.7));
+      dealTimers.push(dealerTimer);
+      return;
+    }
+
+    state.phase = "PLAYER_TURN";
+    showTurnPrompt("Split complete. Play first hand.");
+    renderAll();
+  }, SPLIT_DEAL_STEP_MS * 2);
+  dealTimers.push(revealSecondTimer);
 }
 
 function resolveDealerAndRound() {
@@ -1278,6 +1305,8 @@ function renderStatus() {
     el.dealDrawBtn.textContent = "Next Hand";
   } else if (state.phase === "DEALER_TURN") {
     el.dealDrawBtn.textContent = "Dealer...";
+  } else if (state.phase === "SPLIT_DEALING") {
+    el.dealDrawBtn.textContent = "Splitting...";
   } else {
     el.dealDrawBtn.textContent = "In Hand";
   }
