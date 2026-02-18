@@ -649,7 +649,7 @@ function settleInitialBlackjack() {
       bigWinningSound();
       setResult(
         `Blackjack! You win ${formatCash(profit)}.`,
-        `Paid 3:2. Net ${formatSigned(profit)}. Press Next Hand.`,
+        `Net ${formatSigned(profit)}. Press Next Hand.`,
         "is-win"
       );
     } else {

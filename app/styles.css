@@ -265,7 +265,7 @@ body {
 .card-corner {
   position: absolute;
   font-weight: 800;
-  line-height: 0.95;
+  line-height: 1.05;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -285,6 +285,7 @@ body {
 
 .card-corner .rank {
   font-size: 1.35rem;
+  margin-bottom: 0.18rem;
 }
 
 .card-corner .suit {
@@ -588,19 +589,19 @@ body {
 #aboutDialog {
   width: min(50vw, 640px);
   position: relative;
-  padding-top: 1.2rem;
+  padding-top: 1rem;
 }
 
 .about-logo {
-  width: 92px;
-  height: 92px;
+  width: 74px;
+  height: 74px;
   object-fit: cover;
   border-radius: 12px;
   border: 1px solid rgba(255, 244, 213, 0.5);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.28);
   position: absolute;
-  top: 0.9rem;
-  right: 0.9rem;
+  top: 1.2rem;
+  right: 1rem;
 }
 
 #helpDialog::backdrop,
@@ -876,7 +877,7 @@ body {
 
   .hand-main,
   .player-hand {
-    grid-template-columns: minmax(52px, 62px) minmax(0, 1fr);
+    grid-template-columns: minmax(48px, 58px) minmax(0, 1fr);
     gap: 0.24rem;
   }
 
@@ -884,11 +885,11 @@ body {
     gap: 0.42rem;
     margin-top: 0.08rem;
     display: grid;
-    grid-template-columns: 152px minmax(0, 1fr);
+    grid-template-columns: 160px minmax(0, 1fr);
   }
 
   .status-panel {
-    grid-template-columns: minmax(82px, 94px) minmax(68px, 78px);
+    grid-template-columns: minmax(88px, 102px) minmax(64px, 74px);
     gap: 0.16rem;
     min-width: 0;
     max-width: none;
@@ -909,10 +910,10 @@ body {
   }
 
   .bet-controls .btn.small {
-    min-width: 22px;
-    min-height: 22px;
-    padding: 0.08rem;
-    font-size: 0.72rem;
+    min-width: 26px;
+    min-height: 26px;
+    padding: 0.1rem;
+    font-size: 0.84rem;
   }
 
   .result {
