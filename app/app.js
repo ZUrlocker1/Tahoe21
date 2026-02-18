@@ -621,7 +621,7 @@ function inHandHintText() {
 
 function showTurnPrompt(defaultText = "Your move.") {
   if (canSplit()) {
-    const splitText = isCompactLayout() ? "Split available: create two hands." : "Split available: create two hands (adds one matching bet).";
+    const splitText = isCompactLayout() ? "Split option: create 2 hands?" : "Split available: create two hands (adds one matching bet).";
     setResult(splitText, inHandHintText(), "is-split");
   } else {
     setResult(defaultText, inHandHintText());

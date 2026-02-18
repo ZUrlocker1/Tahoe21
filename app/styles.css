@@ -885,12 +885,12 @@ body {
     gap: 0.42rem;
     margin-top: 0.08rem;
     display: grid;
-    grid-template-columns: 160px minmax(0, 1fr);
+    grid-template-columns: 168px minmax(0, 1fr);
   }
 
   .status-panel {
-    grid-template-columns: minmax(88px, 102px) minmax(64px, 74px);
-    gap: 0.16rem;
+    grid-template-columns: minmax(98px, 114px) minmax(58px, 66px);
+    gap: 0.12rem;
     min-width: 0;
     max-width: none;
   }
@@ -942,5 +942,20 @@ body {
     margin-left: -1rem;
     width: calc(100% + 2rem);
     padding: 0 1rem;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .card-corner {
+    line-height: 0.96;
+  }
+
+  .card-corner .rank {
+    font-size: 0.86rem;
+    margin-bottom: 0.08rem;
+  }
+
+  .card-corner .suit {
+    font-size: 0.62rem;
   }
 }
