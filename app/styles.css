@@ -91,6 +91,10 @@ body {
   display: inline;
 }
 
+.tagline-portrait {
+  display: none;
+}
+
 .btn {
   border: 1px solid #6d8652;
   background: #25381d;
@@ -779,6 +783,14 @@ body {
 }
 
 @media (max-width: 900px) and (orientation: portrait) {
+  .tagline-desktop {
+    display: none;
+  }
+
+  .tagline-portrait {
+    display: inline;
+  }
+
   #aboutDialog {
     width: min(96vw, 640px);
   }
