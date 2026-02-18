@@ -1118,14 +1118,15 @@ function toggleTestMode() {
     state.testScenarioLabel = TEST_SCENARIOS[state.testScenarioIndex % TEST_SCENARIOS.length].name;
     state.testScenarioNote = TEST_SCENARIOS[state.testScenarioIndex % TEST_SCENARIOS.length].note;
     hiBeep();
-    setResult("Secret test mode enabled.", `First scenario: ${state.testScenarioLabel}. Press N for Next scenario.`, "is-loss");
+    setResult("Secet test mode on", `First scenario: ${state.testScenarioLabel}. Press N for Next scenario.`, "is-loss");
   } else {
     lowBeep();
     state.testScenarioLabel = "";
     state.testScenarioNote = "";
     state.testRoundDeck = null;
     state.testRoundPos = 0;
-    setResult("Secret test mode disabled.", KEY_HINT_TEXT);
+    const compactOffText = state.phase === "ROUND_RESULT" ? "Press Next Hand." : "Press Deal to start.";
+    setResult("Secret test mode off", isCompactLayout() ? compactOffText : KEY_HINT_TEXT);
   }
   renderAll();
 }

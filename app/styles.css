@@ -778,6 +778,15 @@ body {
 }
 
 @media (max-width: 900px) and (orientation: portrait) {
+  #aboutDialog {
+    width: min(96vw, 640px);
+  }
+
+  #helpDialog,
+  #aboutDialog {
+    max-width: 96vw;
+  }
+
   .app {
     padding-top: 0.5rem;
   }
@@ -874,6 +883,15 @@ body {
   .status-row {
     gap: 0.42rem;
     margin-top: 0.08rem;
+    display: grid;
+    grid-template-columns: 128px minmax(0, 1fr);
+  }
+
+  .status-panel {
+    grid-template-columns: 1fr;
+    gap: 0.24rem;
+    min-width: 88px;
+    max-width: 104px;
   }
 
   .status-item {
