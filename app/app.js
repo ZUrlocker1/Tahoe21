@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = "0.8";
+const APP_VERSION = "1.0";
 const MIN_BET = 10;
 const BET_STEP = 10;
 const START_BALANCE = 90;
