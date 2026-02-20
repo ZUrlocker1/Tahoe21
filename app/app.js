@@ -50,6 +50,56 @@ const TAUNTS = [
   "Credit line reopened. No judgment. Some judgment.",
 ];
 
+const state = {
+  phase: "PRE_DEAL",
+  soundOn: true,
+  balance: START_BALANCE,
+  bet: MIN_BET,
+  shoe: [],
+  shoePos: 0,
+  cutCard: 0,
+  dealerHand: [],
+  dealerHoleHidden: true,
+  playerHands: [],
+  activeHandIndex: 0,
+  testMode: false,
+  testScenarioIndex: 0,
+  testScenarioLabel: "",
+  testScenarioNote: "",
+  testRoundDeck: null,
+  testRoundPos: 0,
+  resultMain: "Press Deal to start.",
+  resultSub: KEY_HINT_TEXT,
+  dealRevealPlayer: [false, false],
+  dealRevealDealer: [false, false],
+};
+
+const el = {
+  brandLogo: document.querySelector(".brand-logo"),
+  dealerHand: document.getElementById("dealerHand"),
+  dealerTotal: document.getElementById("dealerTotal"),
+  playerHands: document.getElementById("playerHands"),
+  playerTotal: document.getElementById("playerTotal"),
+  paytableList: document.getElementById("paytableList"),
+  betValue: document.getElementById("betValue"),
+  balanceValue: document.getElementById("balanceValue"),
+  resultLine: document.getElementById("resultLine"),
+  subLine: document.getElementById("subLine"),
+  dealDrawBtn: document.getElementById("dealDrawBtn"),
+  betUpBtn: document.getElementById("betUpBtn"),
+  betDownBtn: document.getElementById("betDownBtn"),
+  hitBtn: document.getElementById("hitBtn"),
+  standBtn: document.getElementById("standBtn"),
+  doubleBtn: document.getElementById("doubleBtn"),
+  splitBtn: document.getElementById("splitBtn"),
+  aboutBtn: document.getElementById("aboutBtn"),
+  helpBtn: document.getElementById("helpBtn"),
+  soundBtn: document.getElementById("soundBtn"),
+  aboutDialog: document.getElementById("aboutDialog"),
+  helpDialog: document.getElementById("helpDialog"),
+  versionTag: document.getElementById("versionTag"),
+};
+
 const TEST_SCENARIOS = [
   {
     name: "Split Aces",
@@ -129,56 +179,6 @@ const TEST_SCENARIOS = [
     note: "Double path with losing result.",
   },
 ];
-
-const state = {
-  phase: "PRE_DEAL",
-  soundOn: true,
-  balance: START_BALANCE,
-  bet: MIN_BET,
-  shoe: [],
-  shoePos: 0,
-  cutCard: 0,
-  dealerHand: [],
-  dealerHoleHidden: true,
-  playerHands: [],
-  activeHandIndex: 0,
-  testMode: false,
-  testScenarioIndex: 0,
-  testScenarioLabel: "",
-  testScenarioNote: "",
-  testRoundDeck: null,
-  testRoundPos: 0,
-  resultMain: "Press Deal to start.",
-  resultSub: KEY_HINT_TEXT,
-  dealRevealPlayer: [false, false],
-  dealRevealDealer: [false, false],
-};
-
-const el = {
-  brandLogo: document.querySelector(".brand-logo"),
-  dealerHand: document.getElementById("dealerHand"),
-  dealerTotal: document.getElementById("dealerTotal"),
-  playerHands: document.getElementById("playerHands"),
-  playerTotal: document.getElementById("playerTotal"),
-  paytableList: document.getElementById("paytableList"),
-  betValue: document.getElementById("betValue"),
-  balanceValue: document.getElementById("balanceValue"),
-  resultLine: document.getElementById("resultLine"),
-  subLine: document.getElementById("subLine"),
-  dealDrawBtn: document.getElementById("dealDrawBtn"),
-  betUpBtn: document.getElementById("betUpBtn"),
-  betDownBtn: document.getElementById("betDownBtn"),
-  hitBtn: document.getElementById("hitBtn"),
-  standBtn: document.getElementById("standBtn"),
-  doubleBtn: document.getElementById("doubleBtn"),
-  splitBtn: document.getElementById("splitBtn"),
-  aboutBtn: document.getElementById("aboutBtn"),
-  helpBtn: document.getElementById("helpBtn"),
-  soundBtn: document.getElementById("soundBtn"),
-  aboutDialog: document.getElementById("aboutDialog"),
-  helpDialog: document.getElementById("helpDialog"),
-  versionTag: document.getElementById("versionTag"),
-};
 
 let audioContext;
 let dealTimers = [];
