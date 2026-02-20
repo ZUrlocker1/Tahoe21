@@ -148,7 +148,6 @@ const state = {
   testScenarioNote: "",
   testRoundDeck: null,
   testRoundPos: 0,
-  resultTone: "",
   resultMain: "Press Deal to start.",
   resultSub: KEY_HINT_TEXT,
   dealRevealPlayer: [false, false],
@@ -539,7 +538,6 @@ function renderCardSlot(card, isHidden = false) {
 function setResult(main, sub, toneClass = "") {
   state.resultMain = main;
   state.resultSub = sub;
-  state.resultTone = toneClass;
   el.resultLine.textContent = main;
   el.resultLine.classList.remove("is-win", "is-loss", "is-neutral", "is-split");
   if (toneClass) el.resultLine.classList.add(toneClass);

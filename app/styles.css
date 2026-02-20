@@ -86,11 +86,6 @@ body {
   padding-top: 0.45rem;
 }
 
-.subtitle-break,
-.subtitle-dash {
-  display: inline;
-}
-
 .tagline-portrait {
   display: none;
 }
@@ -811,14 +806,6 @@ body {
   .brand-logo {
     width: 59px;
     height: 59px;
-  }
-
-  .subtitle-break {
-    display: block;
-  }
-
-  .subtitle-dash {
-    display: none;
   }
 
   .header-action .btn {
