@@ -131,3 +131,9 @@ Tahoe21 is a browser-based video blackjack game that keeps the Tahoe5 visual fee
 - UI remains usable and legible on mobile portrait and desktop.
 - Help/About dialogs reflect blackjack rules (not poker text).
 - Audio mapping is correct: Tahoe5-style deal/bet/bailout sounds reused; win/loss outcome sounds are clearly differentiated.
+
+## 13. Future Native Mac / iPhone versoin
+- Implement as a shared SwiftUI codebase built with Xcode, with iPhone and macOS targets from one project.
+- Keep the current gameplay/state logic equivalent to the web version, including hidden Secret Test Mode behavior and deterministic test scenarios.
+- For iPhone portrait, preserve the same high-level panel flow/order used now: header and primary Deal, Hit, Stand, Double, Split buttons at top, followed by dealer area, then player area, then bet/balance/status display areas and utility buttons for About, Help, Sound and then copyright notice.
+- Expect native-specific work for Apple signing/provisioning, App Store/TestFlight packaging, desktop keyboard shortcut parity, and platform audio/haptics wiring.
