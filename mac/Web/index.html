@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tahoe21</title>
+    <link rel="stylesheet" href="./styles.css?v=1.0.0" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon-21.svg?v=1.0.0" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div class="brand">
+          <img class="brand-logo" src="./assets/tahoe-21-logo.png" alt="Tahoe21 logo" />
+          <div class="brand-text">
+            <h1>Tahoe21</h1>
+            <p>
+              <span class="tagline-desktop">Classic Video Blackjack - Vibe coded in a couple hours!</span>
+              <span class="tagline-portrait">Blackjack vibe coded!</span>
+            </p>
+          </div>
+        </div>
+        <div class="header-action">
+          <button id="dealDrawBtn" class="btn primary" type="button">Deal</button>
+        </div>
+      </header>
+
+      <section class="table-area">
+        <div class="cards" aria-label="Blackjack table">
+          <section class="hand-row dealer-row" aria-label="Dealer hand">
+            <div class="hand-main">
+              <div class="hand-info-box">
+                <h2>Dealer</h2>
+                <span id="dealerTotal" class="hand-total">&nbsp;&nbsp;</span>
+              </div>
+              <div id="dealerHand" class="hand-cards"></div>
+            </div>
+          </section>
+
+          <section class="hand-row player-row" aria-label="Player hand area">
+            <div class="hand-main">
+              <div class="hand-info-box">
+                <h2>Player</h2>
+                <span id="playerTotal" class="hand-total">&nbsp;&nbsp;</span>
+              </div>
+              <div id="playerHands" class="player-hands"></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="right-rail" aria-label="Rules and actions">
+          <aside class="paytable" aria-label="Blackjack rules and payouts">
+            <h2>Payout</h2>
+            <ul id="paytableList"></ul>
+          </aside>
+          <div class="side-actions" aria-label="Hand actions">
+            <button id="hitBtn" class="btn secondary" type="button">Hit (Space)</button>
+            <button id="standBtn" class="btn secondary" type="button">Stand (Enter)</button>
+            <button id="doubleBtn" class="btn secondary" type="button">Double (D)</button>
+            <button id="splitBtn" class="btn secondary" type="button">Split (T)</button>
+          </div>
+        </section>
+      </section>
+
+      <section class="status-row" aria-label="Game status and result">
+        <section class="status-panel" aria-label="Game status">
+          <div class="status-item bet-item">
+            <span>Bet</span>
+            <strong id="betValue">$10</strong>
+            <div class="bet-controls">
+              <button id="betDownBtn" class="btn small" type="button" aria-label="Decrease bet">-</button>
+              <button id="betUpBtn" class="btn small" type="button" aria-label="Increase bet">+</button>
+            </div>
+          </div>
+          <div class="status-item balance-item">
+            <span>Balance</span>
+            <strong id="balanceValue">$90</strong>
+          </div>
+        </section>
+
+        <section class="result">
+          <p id="resultLine">Press Deal to start.</p>
+          <p id="subLine">Hit = Space, Stand = Enter, D = Double, T = Split, Esc = Reset.</p>
+        </section>
+      </section>
+
+      <section class="utility-panel">
+        <div class="controls">
+          <div class="control-buttons">
+            <button id="aboutBtn" class="btn secondary" type="button" aria-label="Open about">About (A)</button>
+            <button id="helpBtn" class="btn secondary" type="button" aria-label="Open help">Help (H)</button>
+            <button id="soundBtn" class="btn secondary" type="button" aria-label="Toggle sound">Sound: On (S)</button>
+          </div>
+          <div class="utility-meta">
+            <p class="header-promo">Try <a href="https://apps.apple.com/us/developer/zack-urlocker/id1893448954" target="_blank" rel="noopener noreferrer">Tahoe5</a> video poker!</p>
+            <span id="versionTag" class="header-version">V2.0</span>
+            <p class="header-copyright">Copyright (C) 2026 M. Z. Urlocker</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="helpDialog">
+      <h2>How To Play Tahoe21</h2>
+      <p>1. Adjust bet, then press Deal.</p>
+      <p>2. Choose actions for the active hand: Hit means draw another card. Stand means no more cards.</p>
+      <p>&emsp;-You can Double your bet but then you draw only 1 more card.</p>
+      <p>&emsp;-If you draw two cards of the same value, you can split into two hands.</p>
+      <p>3. Dealer reveals hole card and draws to 17 (stands on soft 17).</p>
+      <p>4. Blackjack pays 3:2, regular win pays 1:1, push returns the bet.</p>
+      <h3>Keyboard Controls</h3>
+      <p>Hit = Space, Stand = Enter, D = Double, T = Split, Esc = Reset</p>
+      <form method="dialog">
+        <button class="btn primary" value="close">Close</button>
+      </form>
+    </dialog>
+
+    <dialog id="aboutDialog">
+      <h2>About</h2>
+      <img class="about-logo" src="./assets/tahoe-21-logo.png" alt="Tahoe21 logo" />
+      <p>Tahoe21 is a video Blackjack game that runs on Mac and iOS. </p>
+      <p>It is based on a shareware game I wrote in 1992 using Turbo Pascal. Fortunately I lost the source code and all the EXEs!</p>
+      <p>So I vibecoded it by creating a PRD with Codex and VS Code and re-using the overall layout and style of the Tahoe5 poker game I created previously. I added features like Double and Split even though I didn't know how those work. Luckily ChatGPT explained it to me in the PRD!</p>
+      <p>The first working prototype took about 15 minutes. Then a couple hours to adjust the game play and layout.</p>
+      <p>Claude wrapped it in a native Mac and iOS app using WebKit.</p>
+      <form method="dialog">
+        <button class="btn primary" value="close">Close</button>
+      </form>
+    </dialog>
+
+    <script src="./app.js?v=1.0.0"></script>
+  </body>
+</html>

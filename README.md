@@ -13,7 +13,7 @@ install, and it works on desktop and mobile.
 **On a Mac** — [download Tahoe21.dmg](https://github.com/ZUrlocker1/Tahoe21/releases/latest/download/Tahoe21.dmg).
 A native Mac app: the same game running in a WebKit view, so it gets a real window, a Dock icon, and
 works offline. Requires macOS 14 or later. Signed and notarized, so it opens without Gatekeeper
-complaining.
+complaining. Source is in [`mac/`](mac/).
 
 **On iPhone and iPad** — a native version was built and works, but it is not distributed. Apple does
 not allow individual developers to publish apps whose rating declares simulated gambling; that
@@ -33,6 +33,14 @@ play and layout.
 
 - A playable web blackjack app in `/app`
 - Product requirements document in `PRD.md`
+- The native Mac / iPhone / iPad app in [`/mac`](mac/) — an Xcode project that wraps the game in a
+  WebKit view. See [`mac/README.md`](mac/README.md) for how it is built and released.
+
+**`/app` and `/mac/Web` are two different versions of the game.** `/mac/Web` began as a copy of
+`/app` and then diverged: About panel wording, a cross-promotion link, and a lot of responsive CSS
+for iPad sizes and small Mac windows. This was a one-way conversion — the two are deliberately not
+kept in sync, and neither is being updated. `/app` is what GitHub Pages serves; `/mac/Web` is what
+ships inside the Mac app.
 
 ## Features
 
